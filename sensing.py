@@ -35,6 +35,9 @@ def sensing_current(_, blockData):
 
     return f'runHaxeCode("return Date.now().{CURYEAR}();") + {INCRE}'
 
+def sensing_dayssince2000(_, _2):
+    return 'daysSince2000()'
+
 def sensing_keypressed(_, blockData):
     if blockData["inputs"] == {}:
         KEY = blockData["fields"]["KEY_OPTION"][0].upper()

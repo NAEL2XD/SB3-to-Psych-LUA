@@ -183,6 +183,7 @@ def fetchOPCodes():
         "sensing_mousey": sensing.sensing_mousey,
         "sensing_timer": sensing.sensing_timer,
         "sensing_current": sensing.sensing_current,
+        "sensing_dayssince2000": sensing.sensing_dayssince2000,
         "sensing_keypressed": sensing.sensing_keypressed,
         "sensing_keyoptions": sensing.sensing_keypressed,
         "sensing_resettimer": sensing.sensing_resettimer,
@@ -392,6 +393,13 @@ end""")
         end
     end
     return false
+end""")
+            compiledList.append("""function daysSince2000()
+    local start = os.time{year=2000, month=1, day=1}
+    local date = os.time()
+    local seconds = date - start
+    local daysSince2000 = seconds / (24 * 60 * 60)
+    return daysSince2000
 end""")
             
             with open(f"export/scripts/{spriteName}.lua", "w") as f:
