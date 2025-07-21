@@ -26,6 +26,16 @@ metadata = {
     "spriteName": "None"
 }
 
+def cleanup():
+    if os.path.exists("save"):
+        os.remove("save")
+    if os.path.exists("spriteName"):
+        os.remove("spriteName")
+    if os.path.exists("listVars"):
+        os.remove("listVars")
+    if os.path.exists("class"):
+        os.remove("class")
+
 def retriveJSONSetting(schema):
     return json.load(open("settings.json"))[schema]
 
@@ -139,6 +149,7 @@ def fetchOPCodes():
         # Controls
         "control_wait": controls.control_wait,
         "control_repeat": controls.control_repeat,
+        "control_forever": controls.control_forever,
         "control_if": controls.control_if,
         "control_if_else": controls.control_if_else,
         "control_wait_until": controls.control_wait_until,
@@ -387,18 +398,11 @@ end""")
                 f.write('\n'.join(compiledList))
                 f.close()
 
-            if os.path.exists("save"):
-                os.remove("save")
-            if os.path.exists("spriteName"):
-                os.remove("spriteName")
-            if os.path.exists("listVars"):
-                os.remove("listVars")
-            if os.path.exists("class"):
-                os.remove("class")
-
+            cleanup()
             print(f"Finished: {spriteName}")
 
     print(f"FULLY DONE! Saved in {round(time.time() - start, 5)} seconds!")
 
 if __name__ == "__main__":
+    cleanup()
     main()
