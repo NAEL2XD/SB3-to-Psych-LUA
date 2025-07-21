@@ -2,15 +2,9 @@ import main
 
 def looks_say(spriteName, blockData):
     meta = main.getMetadata()
-    MESSAGE = main.getInputVar(blockData["inputs"]["MESSAGE"])
+    MESSAGE = main.isNumOrFunc(main.getInputVar(blockData["inputs"]["MESSAGE"]))
     
-    # If it's already a function call or number, don't wrap it in quotes
-    if main.isNumOrFunc(MESSAGE):
-        message_str = MESSAGE
-    else:
-        message_str = f'"{MESSAGE}"'
-    
-    return f'debugPrint("{spriteName}:{meta["line"]}: " .. tostring({message_str}))'
+    return f'debugPrint("{spriteName}:{meta["line"]}: " .. tostring({MESSAGE}))'
 
 def looks_setsizeto(spriteName, blockData):
     SIZE = main.getInputVar(blockData["inputs"]["SIZE"]) + "/100"

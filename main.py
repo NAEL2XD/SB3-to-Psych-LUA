@@ -47,7 +47,7 @@ def isNumOrFunc(s: str):
     except ValueError:
         pass
     
-    if (s.endswith("_l") or s.endswith("_v")) or ("[" in s and "]" in s):
+    if (s.endswith("_l") or s.endswith("_v") or s.startswith("arg__")) or ("[" in s and "]" in s):
         return s
     
     if ("(" in s and ")" in s) or s in ["math.abs", "math.floor", "math.ceil", "math.sin", "math.cos", "math.tan", "math.asin", "math.acos", "math.atan", "math.log", "math.log10", "math.exp", "math.sqrt", "getProperty", "setProperty", "runHaxeCode"]:
@@ -63,6 +63,9 @@ def isNumOrFunc(s: str):
     
     s = s.replace('"', '\\"')
     return f'"{s}"'
+
+def sanitizeVar(var):
+    return re.sub(r'\W|^(?=\d)', '_', var)
 
 def getInputVar(type):
     metadata = getMetadata()
@@ -87,9 +90,6 @@ def getInputVar(type):
     metadata["isAFunc"] = False
     ret = isNumOrFunc(type[1][1])
     return ret if len(ret) != 0 else '""'
-
-def sanitizeVar(var):
-    return re.sub(r'\W|^(?=\d)', '_', var)
 
 # Fix circular Error
 def fetchOPCodes():
@@ -192,7 +192,14 @@ def fetchOPCodes():
         "data_itemoflist": data.data_itemoflist,
         "data_itemnumoflist": data.data_itemnumoflist,
         "data_lengthoflist": data.data_lengthoflist,
-        "data_listcontainsitem": data.data_listcontainsitem
+        "data_listcontainsitem": data.data_listcontainsitem,
+
+        # Procedures
+        "procedures_prototype": data.procedures_prototype,
+        "procedures_definition": data.procedures_definition,
+        "procedures_call": data.procedures_call,
+        "argument_reporter_string_number": data.argument_reporter_string_number,
+        "argument_reporter_boolean": data.argument_reporter_boolean,
     }
 
 curClass = {}
@@ -328,7 +335,11 @@ def main():
                             gottenBlockIDS.append([bID, searchFor])
                 return gottenBlockIDS
 
-            for blockID, typeof in searchForBlockOPCodes(target, ["event_whenflagclicked", "event_whenbroadcastreceived"]):
+            for blockID, typeof in searchForBlockOPCodes(target, ["event_whenflagclicked", "event_whenbroadcastreceived", "procedures_definition"]):
+                if typeof == "procedures_definition":
+                    compiledList.append(processBlock(blockID))
+                    continue
+
                 while blockID != None:
                     blockData = target["blocks"].get(blockID)
                     if retriveJSONSetting("addJsonDebug"):

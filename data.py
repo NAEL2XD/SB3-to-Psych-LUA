@@ -65,3 +65,48 @@ def data_listcontainsitem(spriteName, blockData):
     VARIABLE = main.sanitizeVar(blockData["fields"]["LIST"][0])
     spriteName = main.sanitizeVar(spriteName)
     return f'listcontainsitem({spriteName}_vars.{VARIABLE}_l, {ITEM})'
+
+def procedures_definition(_, blockData):
+    CUSTOM = main.processBlock(blockData["inputs"]["custom_block"][1])
+    CODE = main.processBlock(blockData["next"], True)
+    return f'{CUSTOM}\n{CODE}\nend'
+
+def procedures_prototype(_, blockData):
+    ARGS = []
+    proccode = main.sanitizeVar(blockData["mutation"]["proccode"])
+    for inputList in list(blockData["inputs"].keys()):
+        ARGS.append(main.sanitizeVar(main.processBlock(blockData["inputs"][inputList][1])))
+    outVar = ""
+    for i in range(len(ARGS)):
+        if i == len(ARGS)-1:
+            outVar += ARGS[i]
+        else:
+            outVar += f'{ARGS[i]},'
+    return f'function {proccode}({outVar})'
+
+def argument_reporter_string_number(_, blockData):
+    VALUE = main.sanitizeVar(blockData["fields"]["VALUE"][0])
+    return f"arg__{VALUE}"
+
+def argument_reporter_boolean(_, blockData):
+    VALUE = main.sanitizeVar(blockData["fields"]["VALUE"][0])
+    return f"arg__{VALUE}"
+
+def procedures_call(_, blockData):
+    ARGS = []
+    proccode = main.sanitizeVar(blockData["mutation"]["proccode"])
+    for inputList in list(blockData["inputs"].keys()):
+        arg = blockData["inputs"][inputList]
+
+        if isinstance(arg[1], list): # num/string
+            ARGS.append(main.getInputVar(arg))
+        else:
+            ARGS.append(main.processBlock(arg[1]))
+
+    outVar = ""
+    for i in range(len(ARGS)):
+        if i == len(ARGS)-1:
+            outVar += ARGS[i]
+        else:
+            outVar += f'{ARGS[i]},'
+    return f'{proccode}({outVar})'
