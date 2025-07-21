@@ -7,7 +7,6 @@ def event_whenflagclicked(spriteName, _):
     if containsONCREATE:
         return ""
     
-    main.metadata["indent"] += 1
     containsONCREATE = True
     return f"""function onCreate()
     makeLuaSprite("stage")
@@ -24,3 +23,12 @@ def event_whenflagclicked(spriteName, _):
     addHaxeLibrary("FlxMath", "flixel.math")
     local oldTimer = runHaxeCode("return Timer.stamp()")
     -- code begins here"""
+
+def event_whenbroadcastreceived(_, blockData):
+    BROADCAST_OPTION = main.sanitizeVar(blockData["fields"]["BROADCAST_OPTION"][0]).replace(" ", "_")
+    CODE = main.processBlock(blockData["next"], True)
+    return f'function {BROADCAST_OPTION}()\n{CODE}\nend'
+
+def event_broadcast(_, blockData):
+    SANITIZE = main.getInputVar(blockData["inputs"]["BROADCAST_INPUT"]).replace(" ", "_")
+    return f'caller = {SANITIZE}\ncallOnLuas(caller, {{}})'

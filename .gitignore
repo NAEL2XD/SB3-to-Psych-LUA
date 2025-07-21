@@ -1,0 +1,10 @@
+Project.sb3
+project.json
+export/*
+__pycache__/*
+
+# Files generated
+spriteName
+save
+listVars
+class

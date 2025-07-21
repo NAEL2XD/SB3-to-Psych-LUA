@@ -23,7 +23,7 @@ zip = zipfile.ZipFile(filedialog.askopenfilename(filetypes=[("Scratch Project 3.
 metadata = {
     "line": 0,
     "isAFunc": False,
-    "indent": 0
+    "spriteName": "None"
 }
 
 def retriveJSONSetting(schema):
@@ -96,6 +96,8 @@ def fetchOPCodes():
     return {
         # Events
         "event_whenflagclicked": events.event_whenflagclicked,
+        "event_whenbroadcastreceived": events.event_whenbroadcastreceived,
+        "event_broadcast": events.event_broadcast,
 
         # Motions
         "motion_movesteps": motion.motion_movesteps,
@@ -215,7 +217,10 @@ def processBlock(blockID, repeatUntilNextIsNull=False):
 
     data = curClass["blocks"].get(blockID)
     if data == None:
-        return "--[=[data received none, skipped]=]"
+        # Get from class and try again
+        data = json.load(open("class", "r", encoding="utf-8"))["blocks"].get(blockID)
+        if data == None:
+            return "nil --[=[data returned none, skipping]=]"
 
     if repeatUntilNextIsNull:
         metadata["isAFunc"] = True
@@ -223,7 +228,11 @@ def processBlock(blockID, repeatUntilNextIsNull=False):
 
         while blockID != None:
             stack.append(processBlock(blockID))
-            blockID = curClass["blocks"].get(blockID)["next"]
+            try:
+                blockID = curClass["blocks"].get(blockID)["next"]
+            except TypeError:
+                # Try again
+                blockID = json.load(open("class", "r", encoding="utf-8"))["blocks"].get(blockID)["next"]
             
         return '\n'.join(stack)
 
@@ -276,11 +285,13 @@ def main():
             metadata = {
                 "line": 0,
                 "isAFunc": False,
-                "indent": 0,
                 "spriteName": sanitizeVar(spriteName)
             }
             
             curClass = target
+            n = open("class", "w", encoding="utf-8")
+            n.write(json.dumps(target))
+            n.close()
 
             n = open("listVars", "w")
 
@@ -309,15 +320,26 @@ def main():
             compiledList.append("}")
             n.close()
 
-            blockID = list(target["blocks"].keys())[0]
-            while blockID != None:
-                blockData = target["blocks"].get(blockID)
-                if retriveJSONSetting("addJsonDebug"):
-                    compiledList.append(f'--[=[{blockData}]=]')
-                    
-                metadata["line"] += 1
-                compiledList.append((" " * (metadata["indent"] * 4)) + processBlock(blockID))
-                blockID = blockData["next"]
+            def searchForBlockOPCodes(target, allSearchFor):
+                gottenBlockIDS = []
+                for bID in list(target["blocks"].keys()):
+                    for searchFor in allSearchFor:
+                        if target["blocks"].get(bID)["opcode"] == searchFor:
+                            gottenBlockIDS.append([bID, searchFor])
+                return gottenBlockIDS
+
+            for blockID, typeof in searchForBlockOPCodes(target, ["event_whenflagclicked", "event_whenbroadcastreceived"]):
+                while blockID != None:
+                    blockData = target["blocks"].get(blockID)
+                    if retriveJSONSetting("addJsonDebug"):
+                        compiledList.append(f'--[=[{blockData}]=]')
+
+                    compiledList.append(processBlock(blockID))
+                    if typeof == "event_whenbroadcastreceived":
+                        break
+
+                    metadata["line"] += 1
+                    blockID = blockData["next"]
 
             if events.containsONCREATE:
                 compiledList.append("end")
@@ -360,6 +382,8 @@ end""")
                 os.remove("spriteName")
             if os.path.exists("listVars"):
                 os.remove("listVars")
+            if os.path.exists("class"):
+                os.remove("class")
 
             print(f"Finished: {spriteName}")
 
