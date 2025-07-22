@@ -426,11 +426,11 @@ end""")
             f.write('\n'.join(compiledList))
             f.close()
 
-        #cleanup()
+        cleanup()
         print(f"Finished: {spriteName}")
 
-    #if os.path.exists("stageVars"):
-    #    os.remove("stageVars")
+    if os.path.exists("stageVars"):
+        os.remove("stageVars")
 
     print(f"FULLY DONE! Saved in {round(time.time() - start, 5)} seconds!")
 
