@@ -93,7 +93,7 @@ def getInputVar(type):
                 break
 
         if len(typeof) == 0:
-            return f'--[[{typeof}]]'
+            return f'--[[]]'
         
         return f'{sprName}_vars.{typeof[0]}_{typeof[1]}'
     
