@@ -4,12 +4,22 @@ def data_setvariableto(spriteName, blockData):
     VALUE = main.getInputVar(blockData["inputs"]["VALUE"])
     VARIABLE = main.sanitizeVar(blockData["fields"]["VARIABLE"][0])
     spriteName = main.sanitizeVar(spriteName)
+    RESULT = main.checkIfStageAndReturnVal(VARIABLE)
+
+    if RESULT[0]:
+        return f'stage.{RESULT[1][0]}_{RESULT[1][1]} = {VALUE}'
+    
     return f'{spriteName}_vars.{VARIABLE}_v = {VALUE}'
 
 def data_changevariableby(spriteName, blockData):
     VALUE = main.getInputVar(blockData["inputs"]["VALUE"])
     VARIABLE = main.sanitizeVar(blockData["fields"]["VARIABLE"][0])
     spriteName = main.sanitizeVar(spriteName)
+    RESULT = main.checkIfStageAndReturnVal(VARIABLE)
+
+    if RESULT[0]:
+        return f'stage.{RESULT[1][0]}_{RESULT[1][1]} = stage.{RESULT[1][0]}_{RESULT[1][1]} + {VALUE}'
+    
     return f'{spriteName}_vars.{VARIABLE}_v = {spriteName}_vars.{VARIABLE}_v + {VALUE}'
 
 def data_addtolist(spriteName, blockData):

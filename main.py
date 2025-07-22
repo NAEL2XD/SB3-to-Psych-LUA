@@ -45,7 +45,7 @@ def getMetadata():
 def isNumOrFunc(s: str):
     print(s)
 
-    if not s:
+    if not s or len(s) == 0:
         return '""'
     
     if (s.startswith('"') and s.endswith('"')) or (s.startswith("'") and s.endswith("'")):
@@ -63,6 +63,9 @@ def isNumOrFunc(s: str):
     if ("(" in s and ")" in s) or s in ["math.abs", "math.floor", "math.ceil", "math.sin", "math.cos", "math.tan", "math.asin", "math.acos", "math.atan", "math.log", "math.log10", "math.exp", "math.sqrt", "getProperty", "setProperty", "runHaxeCode"]:
         return s
     
+    if s.lower() == "false" or s.lower() == "true":
+        return s.lower()
+    
     sprite_name = ""
     if os.path.exists("spriteName"):
         with open("spriteName", "r") as f:
@@ -77,6 +80,21 @@ def isNumOrFunc(s: str):
 def sanitizeVar(var):
     return re.sub(r'\W|^(?=\d)', '_', var)
 
+def checkIfStageAndReturnVal(type):
+    isStage = True
+    for fileNames in ["stageVars", "listVars"]:
+        for varData in open(fileNames).read().splitlines():
+            if varData.split("->")[0].lower() == sanitizeVar(type).lower():
+                typeof = [sanitizeVar(type), varData.split("->")[1]]
+                break
+
+        if len(typeof) != 0:
+            break
+
+        isStage = False
+    
+    return [isStage, typeof]
+
 def getInputVar(type):
     metadata = getMetadata()
 
@@ -85,16 +103,12 @@ def getInputVar(type):
         return isNumOrFunc(processBlock(type[1]))
     elif isinstance(type[1], list) and len(type) == 3: # data var
         sprName = open("spriteName", "r").read()
-        typeof = []
+        typeof = checkIfStageAndReturnVal(type[1][1])
 
-        for varData in open("listVars").read().splitlines():
-            if varData.startswith(sanitizeVar(type[1][1])):
-                typeof = [sanitizeVar(type[1][1]), varData.split("->")[1]]
-                break
-
-        if len(typeof) == 0:
-            return f'--[[]]'
+        if len(typeof) == 0 or typeof[0]: # Assuming it's a stage variable
+            return f'stage.{typeof[1][0]}_{typeof[1][1]}'
         
+        typeof = typeof[1]
         return f'{sprName}_vars.{typeof[0]}_{typeof[1]}'
     
     metadata["isAFunc"] = False
@@ -281,7 +295,7 @@ def main():
 
     for diff in ["", "-normal"]:
         with open(f"export/data/scratch/scratch{diff}.json", "w") as f:
-            f.write('{"song":{"speed":1,"stage":"","player1":"","player2":"","notes":[],"bpm":0,"song":"Scratch"}}')
+            f.write('{"song":{"speed":1,"stage":"","player1":"","player2":"","notes":[],"bpm":0,"song":"Scratch"}')
             f.close()
 
     zip.extract("project.json")
@@ -290,85 +304,88 @@ def main():
     for target in project["targets"]:
         events.containsONCREATE = False
 
+        print(list(target["blocks"].keys()))
+
+        spriteName = sanitizeVar(target["name"])
+        n = open("spriteName", "w")
+        n.write(sanitizeVar(spriteName))
+        n.close()
+
+        metadata = {
+            "line": 0,
+            "isAFunc": False,
+            "spriteName": sanitizeVar(spriteName)
+        }
+            
+        curClass = target
+        n = open("class", "w", encoding="utf-8")
+        n.write(json.dumps(target))
+        n.close()
+
+        n = open("listVars", "w")
+
+        # Collecting the variables
+        compiledList = [f'local {sanitizeVar(spriteName)}_vars = {{']
+        for types in ["variables", "lists"]:
+            for var in list(target[types].keys()):
+                var = target[types][var]
+
+                name = sanitizeVar(var[0])
+                value = ""
+
+                if types == "lists":
+                    setAs = "{"
+                    if len(var[1]) != 0:
+                        for listLength in var[1]:
+                            listLength = str(listLength).replace("\\", "\\\\")
+                            setAs += f'"{listLength}",'
+                    value = f"{setAs}}}"
+                else:
+                    value = isNumOrFunc(str(var[1]))
+
+                vorl = "v" if types == "variables" else "l"
+                n.write(f"{name}->{vorl}\n")
+                compiledList.append(f'{name}_{vorl} = {value},')
+        compiledList.append("}")
+        n.close()
+
         if not target["isStage"]:
-            if len(target["blocks"]) == 0:
+            compiledList.append('local stage = require("mods.scripts.Stage")')
+        else:
+            n = open("stageVars", "w")
+            n.write(open("listVars", "r").read())
+            n.close()
+
+        def searchForBlockOPCodes(target, allSearchFor):
+            gottenBlockIDS = []
+            for bID in list(target["blocks"].keys()):
+                for searchFor in allSearchFor:
+                    if target["blocks"].get(bID)["opcode"] == searchFor:
+                        gottenBlockIDS.append([bID, searchFor])
+            return gottenBlockIDS
+
+        for blockID, typeof in searchForBlockOPCodes(target, ["event_whenflagclicked", "event_whenbroadcastreceived", "procedures_definition"]):
+            if typeof == "procedures_definition":
+                compiledList.append(processBlock(blockID))
                 continue
 
-            print(list(target["blocks"].keys()))
+            while blockID != None:
+                blockData = target["blocks"].get(blockID)
+                if retriveJSONSetting("addJsonDebug"):
+                    compiledList.append(f'--[=[{blockData}]=]')
 
-            spriteName = sanitizeVar(target["name"])
-            n = open("spriteName", "w")
-            n.write(sanitizeVar(spriteName))
-            n.close()
+                compiledList.append(processBlock(blockID))
+                if typeof == "event_whenbroadcastreceived":
+                    break
 
-            metadata = {
-                "line": 0,
-                "isAFunc": False,
-                "spriteName": sanitizeVar(spriteName)
-            }
-            
-            curClass = target
-            n = open("class", "w", encoding="utf-8")
-            n.write(json.dumps(target))
-            n.close()
+                metadata["line"] += 1
+                blockID = blockData["next"]
 
-            n = open("listVars", "w")
+        if events.containsONCREATE:
+            compiledList.append("end")
 
-            # Collecting the variables
-            compiledList = [f'local {sanitizeVar(spriteName)}_vars = {{']
-            for types in ["variables", "lists"]:
-                for var in list(target[types].keys()):
-                    var = target[types][var]
-
-                    name = sanitizeVar(var[0])
-                    value = ""
-
-                    if types == "lists":
-                        setAs = "{"
-                        if len(var[1]) != 0:
-                            for listLength in var[1]:
-                                listLength = str(listLength).replace("\\", "\\\\")
-                                setAs += f'"{listLength}",'
-                        value = f"{setAs}}}"
-                    else:
-                        value = isNumOrFunc(str(var[1]))
-
-                    vorl = "v" if types == "variables" else "l"
-                    n.write(f"{name}->{vorl}\n")
-                    compiledList.append(f'{name}_{vorl} = {value},')
-            compiledList.append("}")
-            n.close()
-
-            def searchForBlockOPCodes(target, allSearchFor):
-                gottenBlockIDS = []
-                for bID in list(target["blocks"].keys()):
-                    for searchFor in allSearchFor:
-                        if target["blocks"].get(bID)["opcode"] == searchFor:
-                            gottenBlockIDS.append([bID, searchFor])
-                return gottenBlockIDS
-
-            for blockID, typeof in searchForBlockOPCodes(target, ["event_whenflagclicked", "event_whenbroadcastreceived", "procedures_definition"]):
-                if typeof == "procedures_definition":
-                    compiledList.append(processBlock(blockID))
-                    continue
-
-                while blockID != None:
-                    blockData = target["blocks"].get(blockID)
-                    if retriveJSONSetting("addJsonDebug"):
-                        compiledList.append(f'--[=[{blockData}]=]')
-
-                    compiledList.append(processBlock(blockID))
-                    if typeof == "event_whenbroadcastreceived":
-                        break
-
-                    metadata["line"] += 1
-                    blockID = blockData["next"]
-
-            if events.containsONCREATE:
-                compiledList.append("end")
-
-            compiledList.append('function wait(n) if n>0 then os.execute("ping -n "..tonumber(n+1).." localhost > NUL") end end')
-            compiledList.append("""function mouseOverlaps(tag)
+        compiledList.append('function wait(n) if n>0 then os.execute("ping -n "..tonumber(n+1).." localhost > NUL") end end')
+        compiledList.append("""function mouseOverlaps(tag)
     addHaxeLibrary('Reflect')
     return runHaxeCode([[
         var obj = game.getLuaObject(']]..tag..[[');
@@ -377,7 +394,7 @@ def main():
         return obj.getScreenBounds(null, obj.cameras[0]).containsPoint(FlxG.mouse.getScreenPosition(obj.cameras[0]));
     ]])
 end""")
-            compiledList.append("""function itemnumoflist(list,str)
+        compiledList.append("""function itemnumoflist(list,str)
     local count=0
     for _=1,#list do
         if list[_]==str then
@@ -386,7 +403,7 @@ end""")
     end
     return count
 end""")
-            compiledList.append("""function listcontainsitem(list,str)
+        compiledList.append("""function listcontainsitem(list,str)
     for _=1,#list do
         if string.find(list[_],str) then
             return true
@@ -394,20 +411,26 @@ end""")
     end
     return false
 end""")
-            compiledList.append("""function daysSince2000()
+        compiledList.append("""function daysSince2000()
     local start = os.time{year=2000, month=1, day=1}
     local date = os.time()
     local seconds = date - start
     local daysSince2000 = seconds / (24 * 60 * 60)
     return daysSince2000
 end""")
-            
-            with open(f"export/scripts/{spriteName}.lua", "w") as f:
-                f.write('\n'.join(compiledList))
-                f.close()
+        
+        if target["isStage"]:
+            compiledList.append(f'return {sanitizeVar(spriteName)}_vars')
 
-            cleanup()
-            print(f"Finished: {spriteName}")
+        with open(f"export/scripts/{spriteName}.lua", "w") as f:
+            f.write('\n'.join(compiledList))
+            f.close()
+
+        #cleanup()
+        print(f"Finished: {spriteName}")
+
+    #if os.path.exists("stageVars"):
+    #    os.remove("stageVars")
 
     print(f"FULLY DONE! Saved in {round(time.time() - start, 5)} seconds!")
 
