@@ -2,15 +2,15 @@ import main
 
 def motion_movesteps(spriteName, blockData):
     STEPS = main.getInputVar(blockData["inputs"]["STEPS"])
-    return f'setProperty("{spriteName}.x", getProperty("{spriteName}.x") + {STEPS})'
+    return f'setProperty("{spriteName}.x",getProperty("{spriteName}.x")+{STEPS}+240)'
 
 def motion_turnleft(spriteName, blockData):
     DEGREES = main.getInputVar(blockData["inputs"]["DEGREES"])
-    return f'setProperty("{spriteName}.angle", getProperty("{spriteName}.angle") - {DEGREES})'
+    return f'setProperty("{spriteName}.angle",getProperty("{spriteName}.angle")-{DEGREES})'
 
 def motion_turnright(spriteName, blockData):
     DEGREES = main.getInputVar(blockData["inputs"]["DEGREES"])
-    return f'setProperty("{spriteName}.angle", getProperty("{spriteName}.angle") + {DEGREES})'
+    return f'setProperty("{spriteName}.angle",getProperty("{spriteName}.angle")+{DEGREES})'
 
 def motion_goto(spriteName, blockData):
     DEGREES = blockData["inputs"]["DEGREES"]
@@ -19,16 +19,16 @@ def motion_goto(spriteName, blockData):
         return main.processBlock(DEGREES)
     
     if DEGREES[1] == "_random_":
-        return f'setProperty("{spriteName}.x", getRandomInt(0, 480))\nsetProperty("{spriteName}.y", getRandomInt(0, 360))'
+        return f'setProperty("{spriteName}.x",getRandomInt(0, 480)+240)\nsetProperty("{spriteName}.y",getRandomInt(0, 360)+180)'
     elif DEGREES[1] == "_mouse_":
-        return f'setProperty("{spriteName}.x", getMouseX("other"))\nsetProperty("{spriteName}.y", getMouseY("other"))'
+        return f'setProperty("{spriteName}.x",getMouseX("other"))\nsetProperty("{spriteName}.y",getMouseY("other"))'
     else: # Assuming it's a sprite
-        return f'setProperty("{spriteName}.x", getProperty("{DEGREES[1]}.x"))\nsetProperty("{spriteName}.y", getProperty("{DEGREES[1]}.y"))'
+        return f'setProperty("{spriteName}.x",getProperty("{DEGREES[1]}.x"))\nsetProperty("{spriteName}.y",getProperty("{DEGREES[1]}.y"))'
     
 def motion_gotoxy(spriteName, blockData):
     X = main.getInputVar(blockData["inputs"]["X"])
     Y = main.getInputVar(blockData["inputs"]["Y"])
-    return f'setProperty("{spriteName}.x", {X})\nsetProperty("{spriteName}.y", {Y})'
+    return f'setProperty("{spriteName}.x",{X}+240)\nsetProperty("{spriteName}.y",{Y}+180)'
 
 def motion_glideto(spriteName, blockData):
     if blockData["fields"] != {}:
@@ -42,13 +42,13 @@ def motion_glideto(spriteName, blockData):
         
     SECS = main.getInputVar(blockData["inputs"]["SECS"])
     TO = main.processBlock(blockData["inputs"]["TO"])
-    return f'doTweenX("{spriteName}_glideX", "{spriteName}", {TO[0]}, {SECS})\ndoTweenY("{spriteName}_glideY", "{spriteName}", {TO[1]}, {SECS})'
+    return f'doTweenX("{spriteName}_glideX","{spriteName}",{TO[0]}+240,{SECS})\ndoTweenY("{spriteName}_glideY","{spriteName}",{TO[1]}+180,{SECS})'
 
 def motion_glidesecstoxy(spriteName, blockData):
     SECS = main.getInputVar(blockData["inputs"]["SECS"])
     X = main.getInputVar(blockData["inputs"]["X"])
     Y = main.getInputVar(blockData["inputs"]["Y"])
-    return f'doTweenX("{spriteName}_glideX", "{spriteName}", {X}, {SECS})\ndoTweenX("{spriteName}_glideX", "{spriteName}", {Y}, {SECS})'
+    return f'doTweenX("{spriteName}_glideX","{spriteName}",{X}+240,{SECS})\ndoTweenX("{spriteName}_glideY","{spriteName}",{Y}+180,{SECS})'
 
 def motion_pointindirection(spriteName, blockData):
     DIRECTION = main.getInputVar(blockData["inputs"]["DIRECTION"])
@@ -58,36 +58,36 @@ def motion_pointtowards(spriteName, blockData):
     if blockData["fields"] != {}:
         to = blockData["fields"]["TOWARDS"][0]
         if to == "_mouse_":
-            return f'math.atan2(getMouseY("other") - getProperty("{spriteName}.y"), getMouseX("other") - getProperty("{spriteName}.x"))'
+            return f'math.atan2(getMouseY("other")-getProperty("{spriteName}.y"),getMouseX("other")-getProperty("{spriteName}.x"))'
         elif to == "_random_":
-            return f'getRandomInt(-180, 180)'
+            return f'getRandomInt(-180,180)'
         else:
             return f'getProperty("{to}.angle")'
 
     TOWARDS = main.processBlock(blockData["inputs"]["TOWARDS"])
-    return f'setProperty("{spriteName}.angle", {TOWARDS})'
+    return f'setProperty("{spriteName}.angle",{TOWARDS})'
 
 def motion_changexby(spriteName, blockData):
     DX = main.getInputVar(blockData["inputs"]["DX"])
-    return f'setProperty("{spriteName}.x", getProperty("{spriteName}.x") + {DX})'
+    return f'setProperty("{spriteName}.x",getProperty("{spriteName}.x")+{DX})'
 
 def motion_setx(spriteName, blockData):
     X = main.getInputVar(blockData["inputs"]["X"])
-    return f'setProperty("{spriteName}.x", {X})'
+    return f'setProperty("{spriteName}.x",{X}+240)'
 
 def motion_changeyby(spriteName, blockData):
     DY = main.getInputVar(blockData["inputs"]["DY"])
-    return f'setProperty("{spriteName}.y", getProperty("{spriteName}.y") + {DY})'
+    return f'setProperty("{spriteName}.y",getProperty("{spriteName}.y")+{DY})'
 
 def motion_sety(spriteName, blockData):
     Y = main.getInputVar(blockData["inputs"]["Y"])
-    return f'setProperty("{spriteName}.y", {Y})'
+    return f'setProperty("{spriteName}.y",{Y}+180)'
 
 def motion_xposition(spriteName, _):
-    return f'getProperty("{spriteName}.x")'
+    return f'getProperty("{spriteName}.x")-240'
 
 def motion_yposition(spriteName, _):
-    return f'getProperty("{spriteName}.y")'
+    return f'getProperty("{spriteName}.y")-180'
 
 def motion_direction(spriteName, _):
     return f'getProperty("{spriteName}.angle")'

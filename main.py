@@ -397,29 +397,35 @@ end""")
         compiledList.append("""function itemnumoflist(list,str)
     local count=0
     for _=1,#list do
-        if list[_]==str then
-            count=count+1
-        end
+        if list[_]==str then count=count+1 end
     end
     return count
 end""")
         compiledList.append("""function listcontainsitem(list,str)
     for _=1,#list do
-        if string.find(list[_],str) then
-            return true
-        end
+        if string.find(list[_],str) then return true end
     end
     return false
 end""")
         compiledList.append("""function daysSince2000()
-    local start = os.time{year=2000, month=1, day=1}
-    local date = os.time()
-    local seconds = date - start
-    local daysSince2000 = seconds / (24 * 60 * 60)
-    return daysSince2000
+    return (os.time()-os.time{year=2000,month=1,day=1})/86400
 end""")
         
+        i = 0
+        for strstuff in compiledList:
+            if strstuff.startswith("function onUpdate(__)"):
+                compiledList[i] = ""
+                compiledList.append(strstuff)
+                break
+            i += 1
+        
         if target["isStage"]:
+            compiledList.append("""function onCreate()
+    makeLuaSprite("stage")
+    makeGraphic("stage", 1920, 1080, "FFFFFF")
+    setObjectCamera("stage", "other")
+    addLuaSprite("stage")
+end""")
             compiledList.append(f'return {sanitizeVar(spriteName)}_vars')
 
         with open(f"export/scripts/{spriteName}.lua", "w") as f:

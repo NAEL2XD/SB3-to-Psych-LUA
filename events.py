@@ -1,4 +1,6 @@
 import main
+import ast
+
 containsONCREATE = False
 
 def event_whenflagclicked(spriteName, _):
@@ -7,21 +9,26 @@ def event_whenflagclicked(spriteName, _):
     if containsONCREATE:
         return ""
     
-    containsONCREATE = True
-    return f"""function onCreate()
-    makeLuaSprite("stage")
-    makeGraphic("stage", 1920, 1080, "FFFFFF")
-    setObjectCamera("stage", "other")
-    addLuaSprite("stage")
+    f = ast.literal_eval(open("save", "r", encoding="utf-8").read().split("[[||]]")[0])
 
-    makeLuaSprite("{spriteName}", "{spriteName}", 0, 0)
+    try:
+        x = f["x"]
+        y = f["y"]
+    except:
+        x = 0
+        y = 0
+
+    containsONCREATE = True
+    return f"""-- Generated using Nael's SB3 to Psych Lua! https://github.com/NAEL2XD/SB3-to-Psych-LUA
+    function onCreate()
+    makeLuaSprite("{spriteName}", "{spriteName}", {x}+240, {y}+180)
     setObjectCamera("{spriteName}", "other")
     addLuaSprite("{spriteName}")
     
     addHaxeLibrary("Timer", "haxe")
     addHaxeLibrary("Date", "haxe")
     addHaxeLibrary("FlxMath", "flixel.math")
-    local oldTimer = runHaxeCode("return Timer.stamp()")
+    oldTimer = runHaxeCode("return Timer.stamp()")
     -- code begins here"""
 
 def event_whenbroadcastreceived(_, blockData):
