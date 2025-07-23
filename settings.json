@@ -1,4 +1,5 @@
 {
     "addJsonDebug": false,
-    "doCleanup": true
+    "doCleanup": true,
+    "printingDebug": false
 }

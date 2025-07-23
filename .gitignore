@@ -1,4 +1,4 @@
-Project.sb3
+**.sb3
 project.json
 export/*
 __pycache__/*

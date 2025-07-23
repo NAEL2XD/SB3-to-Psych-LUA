@@ -44,7 +44,8 @@ def saveMetedata(meta):
     n.close()
 
 def isNumOrFunc(s: str):
-    print(s)
+    if retriveJSONSetting("printingDebug"):
+        print(s)
 
     if not s or len(s) == 0:
         return '""'
@@ -295,7 +296,7 @@ def main():
     os.mkdir("export/data/scratch")
 
     with open("export/weeks/scratchWeek.json", "w") as f:
-        f.write('{"songs":[["Scratch","bf",[12,181,0]]],"hideFreeplay":false,"weekBackground":"","difficulties":"Normal","weekCharacters":["","",""],"storyName":"Converted Using Nael\'s SB3 to FNF Script","weekName":"","freeplayColor":[146,113,253],"hideStoryMode":false,"weekBefore":"","startUnlocked":false}')
+        f.write('{"songs":[["Scratch","bf",[12,181,0]]],"hideFreeplay":false,"weekBackground":"","difficulties":"Normal","weekCharacters":["","",""],"storyName":"Converted Using Nael"s SB3 to FNF Script","weekName":"","freeplayColor":[146,113,253],"hideStoryMode":false,"weekBefore":"","startUnlocked":false}')
         f.close()
 
     for diff in ["", "-normal"]:
@@ -309,7 +310,8 @@ def main():
     for target in project["targets"]:
         events.containsONCREATE = False
 
-        print(list(target["blocks"].keys()))
+        if retriveJSONSetting("printingDebug"):
+            print(list(target["blocks"].keys()))
 
         spriteName = sanitizeVar(target["name"])
         n = open("spriteName", "w")
@@ -354,7 +356,7 @@ def main():
         n.close()
 
         if not target["isStage"]:
-            compiledList.append('local stage = require("mods.scripts.Stage")\nluaDebugMode = true')
+            compiledList.append('local stage = require("mods.scripts.Stage")\nluaDebugMode = true\nlocal oldTimer = 0')
         else:
             n = open("stageVars", "w")
             n.write(open("listVars", "r").read())
@@ -391,32 +393,11 @@ def main():
         if events.containsONCREATE:
             compiledList.append("end")
 
-        compiledList.append('function wait(n) if n>0 then os.execute("ping -n "..tonumber(n+1).." localhost > NUL") end end')
-        compiledList.append("""function mouseOverlaps(tag)
-addHaxeLibrary('Reflect')
-return runHaxeCode([[
-var obj = game.getLuaObject(']]..tag..[[');
-if (obj == null) obj = Reflect.getProperty(game, ']]..tag..[[');
-if (obj == null) return false;
-return obj.getScreenBounds(null, obj.cameras[0]).containsPoint(FlxG.mouse.getScreenPosition(obj.cameras[0]));
-]])
-end""")
-        compiledList.append("""function itemnumoflist(list,str)
-local count=0
-for _=1,#list do
-if list[_]==str then count=count+1 end
-end
-return count
-end""")
-        compiledList.append("""function listcontainsitem(list,str)
-for _=1,#list do
-if string.find(list[_],str) then return true end
-end
-return false
-end""")
-        compiledList.append("""function daysSince2000()
-return (os.time()-os.time{year=2000,month=1,day=1})/86400
-end""")
+        compiledList.append('function wait(n) if n>0 then os.execute(\"ping -n \"..tonumber(n+1)..\" localhost > NUL\") end end')
+        compiledList.append('function mouseOverlaps(tag)\naddHaxeLibrary("Reflect")\nreturn runHaxeCode([[\nvar obj = game.getLuaObject("]]..tag..[[");\nif (obj == null) obj = Reflect.getProperty(game, "]]..tag..[[");\nif (obj == null) return false;\nreturn obj.getScreenBounds(null, obj.cameras[0]).containsPoint(FlxG.mouse.getScreenPosition(obj.cameras[0]));\n]])\nend')
+        compiledList.append('function itemnumoflist(list,str)\nlocal count=0\nfor _=1,#list do\nif list[_]==str then count=count+1 end\nend\nreturn count\nend')
+        compiledList.append('function listcontainsitem(list,str)\nfor _=1,#list do\nif string.find(list[_],str) then return true end\nend\nreturn false\nend')
+        compiledList.append('function daysSince2000()\nreturn (os.time()-os.time{year=2000,month=1,day=1})/86400\nend')
         
         i = 0
         for strstuff in compiledList:
@@ -427,14 +408,7 @@ end""")
             i += 1
         
         if target["isStage"]:
-            compiledList.append("""
-function onCreate()
-makeLuaSprite("stage")
-makeGraphic("stage", 1920, 1080, "FFFFFF")
-setObjectCamera("stage", "hud")
-addLuaSprite("stage")
-setProperty("camGame.alpha", 0)
-end""")
+            compiledList.append('\nfunction onCreate()\nmakeLuaSprite(\"stage\")\nmakeGraphic(\"stage\", 1920, 1080, \"FFFFFF\")\nsetObjectCamera(\"stage\", \"hud\")\naddLuaSprite(\"stage\")\nsetProperty(\"camGame.alpha\", 0)\nend')
             compiledList.append(f'return {sanitizeVar(spriteName)}_vars')
 
         with open(f"export/scripts/{spriteName}.lua", "w") as f:
