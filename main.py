@@ -420,11 +420,13 @@ end""")
             i += 1
         
         if target["isStage"]:
-            compiledList.append("""function onCreate()
+            compiledList.append("""
+function onCreate()
 makeLuaSprite("stage")
 makeGraphic("stage", 1920, 1080, "FFFFFF")
-setObjectCamera("stage", "other")
+setObjectCamera("stage", "hud")
 addLuaSprite("stage")
+setProperty("camGame.alpha", 0)
 end""")
             compiledList.append(f'return {sanitizeVar(spriteName)}_vars')
 
@@ -438,6 +440,9 @@ end""")
     if os.path.exists("stageVars"):
         os.remove("stageVars")
 
+    n = open("export/scripts/main_func.lua", "w")
+    n.write('function onUpdate(_)setTextString("scoreTxt","")for i=0,1 do for j=0,3 do setPropertyFromGroup(i==0 and"opponentStrums"or"playerStrums",j,"visible",false)end end if keyboardPressed("ESCAPE")then exitSong()end end function onStartCountdown()return Function_Stop end function onCreatePost()for v0=0,1 do makeLuaSprite("a_"..v0,"",v0==0 and 480 or 0,v0==1 and 360 or 0);makeGraphic("a_"..v0,999,999,"000000");setObjectCamera("a_"..v0,"other");addLuaSprite("a_"..v0);end end')
+    n.close()
     print(f"FULLY DONE! Saved in {round(time.time() - start, 5)} seconds!")
 
 if __name__ == "__main__":

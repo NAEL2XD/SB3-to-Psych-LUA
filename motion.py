@@ -21,7 +21,7 @@ def motion_goto(spriteName, blockData):
     if DEGREES[1] == "_random_":
         return f'setProperty("{spriteName}.x",getRandomInt(0, 480)+240)\nsetProperty("{spriteName}.y",getRandomInt(0, 360)+180)'
     elif DEGREES[1] == "_mouse_":
-        return f'setProperty("{spriteName}.x",getMouseX("other"))\nsetProperty("{spriteName}.y",getMouseY("other"))'
+        return f'setProperty("{spriteName}.x",getMouseX("hud"))\nsetProperty("{spriteName}.y",getMouseY("hud"))'
     else: # Assuming it's a sprite
         return f'setProperty("{spriteName}.x",getProperty("{DEGREES[1]}.x"))\nsetProperty("{spriteName}.y",getProperty("{DEGREES[1]}.y"))'
     
@@ -36,7 +36,7 @@ def motion_glideto(spriteName, blockData):
         if to == "_random_":
             return ["getRandomInt(0, 480)", "getRandomInt(0, 360)"]
         elif to == "_mouse_":
-            return ['getMouseX("other")', 'getMouseY("other")']
+            return ['getMouseX("hud")', 'getMouseY("hud")']
         else: # Assuming it's a sprite
             return [f'getProperty("{to}.x")', f'getProperty("{to}.y")']
         
@@ -58,7 +58,7 @@ def motion_pointtowards(spriteName, blockData):
     if blockData["fields"] != {}:
         to = blockData["fields"]["TOWARDS"][0]
         if to == "_mouse_":
-            return f'math.atan2(getMouseY("other")-getProperty("{spriteName}.y"),getMouseX("other")-getProperty("{spriteName}.x"))'
+            return f'math.atan2(getMouseY("hud")-getProperty("{spriteName}.y"),getMouseX("hud")-getProperty("{spriteName}.x"))'
         elif to == "_random_":
             return f'getRandomInt(-180,180)'
         else:

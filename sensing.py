@@ -4,10 +4,10 @@ def sensing_mousedown(_1, _2):
     return 'mousePressed("left")'
 
 def sensing_mousex(_1, _2):
-    return 'getMouseX("other")'
+    return 'getMouseX("hud")'
 
 def sensing_mousey(_1, _2):
-    return 'getMouseY("other")'
+    return 'getMouseY("hud")'
 
 def sensing_timer(_1, _2):
     return 'runHaxeCode("return Timer.stamp();") - oldTimer'
