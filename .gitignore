@@ -3,9 +3,10 @@ project.json
 export/*
 __pycache__/*
 
-# Files generated
+# Files generated from py
 spriteName
 save
 listVars
 class
 stageVars
+metadata
