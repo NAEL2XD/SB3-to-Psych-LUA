@@ -10,7 +10,7 @@ def sensing_mousey(_1, _2):
     return 'getMouseY("hud")'
 
 def sensing_timer(_1, _2):
-    return 'runHaxeCode("return Timer.stamp();") - oldTimer'
+    return '(runHaxeCode("return Timer.stamp();") - oldTimer)'
 
 def sensing_current(_, blockData):
     INCRE = "0"
@@ -33,7 +33,7 @@ def sensing_current(_, blockData):
     elif CURYEAR == "SECOND":
         CURYEAR = "getSeconds"
 
-    return f'runHaxeCode("return Date.now().{CURYEAR}();") + {INCRE}'
+    return f'(runHaxeCode("return Date.now().{CURYEAR}();") + {INCRE})'
 
 def sensing_dayssince2000(_, _2):
     return 'daysSince2000()'
