@@ -20,12 +20,6 @@ import data
 
 zip = zipfile.ZipFile(filedialog.askopenfilename(filetypes=[("Scratch Project 3.0", "*.sb3")]))
 
-metadata = {
-    "line": 0,
-    "isAFunc": False,
-    "spriteName": "None"
-}
-
 def cleanup():
     if os.path.exists("save"):
         os.remove("save")
@@ -35,12 +29,19 @@ def cleanup():
         os.remove("listVars")
     if os.path.exists("class"):
         os.remove("class")
+    if os.path.exists("metadata"):
+        os.remove("metadata")
 
 def retriveJSONSetting(schema):
     return json.load(open("settings.json"))[schema]
 
 def getMetadata():
-    return metadata
+    return ast.literal_eval(open("metadata", "r").read())
+
+def saveMetedata(meta):
+    n = open("metadata", "w")
+    n.write(str(meta))
+    n.close()
 
 def isNumOrFunc(s: str):
     print(s)
@@ -99,7 +100,8 @@ def getInputVar(type):
     metadata = getMetadata()
 
     if isinstance(type[1], str):
-        metadata["isAFunc"] = True
+        metadata["line"] += 1
+        saveMetedata(metadata)
         return isNumOrFunc(processBlock(type[1]))
     elif isinstance(type[1], list) and len(type) == 3: # data var
         sprName = open("spriteName", "r").read()
@@ -111,7 +113,6 @@ def getInputVar(type):
         typeof = typeof[1]
         return f'{sprName}_vars.{typeof[0]}_{typeof[1]}'
     
-    metadata["isAFunc"] = False
     ret = isNumOrFunc(type[1][1])
     return ret if len(ret) != 0 else '""'
 
@@ -256,10 +257,14 @@ def processBlock(blockID, repeatUntilNextIsNull=False):
             return "nil --[=[data returned none, skipping]=]"
 
     if repeatUntilNextIsNull:
-        metadata["isAFunc"] = True
+        metadata = getMetadata()
+        saveMetedata(metadata)
+
         stack = []
 
         while blockID != None:
+            metadata["line"] += 1
+            saveMetedata(metadata)
             stack.append(processBlock(blockID))
             try:
                 blockID = curClass["blocks"].get(blockID)["next"]
@@ -313,9 +318,8 @@ def main():
 
         metadata = {
             "line": 0,
-            "isAFunc": False,
-            "spriteName": sanitizeVar(spriteName)
         }
+        saveMetedata(metadata)
             
         curClass = target
         n = open("class", "w", encoding="utf-8")
@@ -366,6 +370,8 @@ def main():
 
         for blockID, typeof in searchForBlockOPCodes(target, ["event_whenflagclicked", "event_whenbroadcastreceived", "procedures_definition"]):
             if typeof == "procedures_definition":
+                metadata["line"] += 1
+                saveMetedata(metadata)
                 compiledList.append(processBlock(blockID))
                 continue
 
@@ -379,6 +385,7 @@ def main():
                     break
 
                 metadata["line"] += 1
+                saveMetedata(metadata)
                 blockID = blockData["next"]
 
         if events.containsONCREATE:
@@ -434,7 +441,9 @@ end""")
             f.write('\n'.join(compiledList))
             f.close()
 
-        cleanup()
+        if retriveJSONSetting("doCleanup"):
+            cleanup()
+
         print(f"Finished: {spriteName}")
 
     if os.path.exists("stageVars"):
