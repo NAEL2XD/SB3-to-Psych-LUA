@@ -29,6 +29,7 @@ def event_whenflagclicked(spriteName, _):
     addHaxeLibrary("Date", "haxe")
     addHaxeLibrary("FlxMath", "flixel.math")
     oldTimer = runHaxeCode("return Timer.stamp()")
+    setPropertyFromClass("flixel.FlxG", "mouse.visible", true)
     -- code begins here"""
 
 def event_whenbroadcastreceived(_, blockData):

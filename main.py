@@ -295,7 +295,7 @@ def main():
 
     for diff in ["", "-normal"]:
         with open(f"export/data/scratch/scratch{diff}.json", "w") as f:
-            f.write('{"song":{"speed":1,"stage":"","player1":"","player2":"","notes":[],"bpm":0,"song":"Scratch"}')
+            f.write('{"song":{"player1":"bf","notes":[],"player2":"gf","song":"Scratch","speed":1,"gfVersion":"gf","events":[],"stage":"stage","needsVoices":true,"bpm":100}}')
             f.close()
 
     zip.extract("project.json")
@@ -350,7 +350,7 @@ def main():
         n.close()
 
         if not target["isStage"]:
-            compiledList.append('local stage = require("mods.scripts.Stage")')
+            compiledList.append('local stage = require("mods.scripts.Stage")\nluaDebugMode = true')
         else:
             n = open("stageVars", "w")
             n.write(open("listVars", "r").read())
