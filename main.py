@@ -386,29 +386,29 @@ def main():
 
         compiledList.append('function wait(n) if n>0 then os.execute("ping -n "..tonumber(n+1).." localhost > NUL") end end')
         compiledList.append("""function mouseOverlaps(tag)
-    addHaxeLibrary('Reflect')
-    return runHaxeCode([[
-        var obj = game.getLuaObject(']]..tag..[[');
-        if (obj == null) obj = Reflect.getProperty(game, ']]..tag..[[');
-        if (obj == null) return false;
-        return obj.getScreenBounds(null, obj.cameras[0]).containsPoint(FlxG.mouse.getScreenPosition(obj.cameras[0]));
-    ]])
+addHaxeLibrary('Reflect')
+return runHaxeCode([[
+var obj = game.getLuaObject(']]..tag..[[');
+if (obj == null) obj = Reflect.getProperty(game, ']]..tag..[[');
+if (obj == null) return false;
+return obj.getScreenBounds(null, obj.cameras[0]).containsPoint(FlxG.mouse.getScreenPosition(obj.cameras[0]));
+]])
 end""")
         compiledList.append("""function itemnumoflist(list,str)
-    local count=0
-    for _=1,#list do
-        if list[_]==str then count=count+1 end
-    end
-    return count
+local count=0
+for _=1,#list do
+if list[_]==str then count=count+1 end
+end
+return count
 end""")
         compiledList.append("""function listcontainsitem(list,str)
-    for _=1,#list do
-        if string.find(list[_],str) then return true end
-    end
-    return false
+for _=1,#list do
+if string.find(list[_],str) then return true end
+end
+return false
 end""")
         compiledList.append("""function daysSince2000()
-    return (os.time()-os.time{year=2000,month=1,day=1})/86400
+return (os.time()-os.time{year=2000,month=1,day=1})/86400
 end""")
         
         i = 0
@@ -421,10 +421,10 @@ end""")
         
         if target["isStage"]:
             compiledList.append("""function onCreate()
-    makeLuaSprite("stage")
-    makeGraphic("stage", 1920, 1080, "FFFFFF")
-    setObjectCamera("stage", "other")
-    addLuaSprite("stage")
+makeLuaSprite("stage")
+makeGraphic("stage", 1920, 1080, "FFFFFF")
+setObjectCamera("stage", "other")
+addLuaSprite("stage")
 end""")
             compiledList.append(f'return {sanitizeVar(spriteName)}_vars')
 
