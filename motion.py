@@ -2,7 +2,7 @@ import main
 
 def motion_movesteps(spriteName, blockData):
     STEPS = main.getInputVar(blockData["inputs"]["STEPS"])
-    return f'setProperty("{spriteName}.x",getProperty("{spriteName}.x")+{STEPS}+240)'
+    return f'setProperty("{spriteName}.x",getProperty("{spriteName}.x")+{STEPS})'
 
 def motion_turnleft(spriteName, blockData):
     DEGREES = main.getInputVar(blockData["inputs"]["DEGREES"])
@@ -28,7 +28,7 @@ def motion_goto(spriteName, blockData):
 def motion_gotoxy(spriteName, blockData):
     X = main.getInputVar(blockData["inputs"]["X"])
     Y = main.getInputVar(blockData["inputs"]["Y"])
-    return f'setProperty("{spriteName}.x",{X}+240)\nsetProperty("{spriteName}.y",{Y}+180)'
+    return f'setProperty("{spriteName}.x",{X}+240-(getProperty("{spriteName}.width")/2))\nsetProperty("{spriteName}.y",{Y}+180-(getProperty("{spriteName}.height")/2))'
 
 def motion_glideto(spriteName, blockData):
     if blockData["fields"] != {}:
@@ -73,7 +73,7 @@ def motion_changexby(spriteName, blockData):
 
 def motion_setx(spriteName, blockData):
     X = main.getInputVar(blockData["inputs"]["X"])
-    return f'setProperty("{spriteName}.x",{X}+240)'
+    return f'setProperty("{spriteName}.x",{X}+240-(getProperty("{spriteName}.width")/2))'
 
 def motion_changeyby(spriteName, blockData):
     DY = main.getInputVar(blockData["inputs"]["DY"])
@@ -81,7 +81,7 @@ def motion_changeyby(spriteName, blockData):
 
 def motion_sety(spriteName, blockData):
     Y = main.getInputVar(blockData["inputs"]["Y"])
-    return f'setProperty("{spriteName}.y",{Y}+180)'
+    return f'setProperty("{spriteName}.y",{Y}+180-(getProperty("{spriteName}.height")/2))'
 
 def motion_xposition(spriteName, _):
     return f'getProperty("{spriteName}.x")-240'

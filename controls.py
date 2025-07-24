@@ -54,4 +54,8 @@ def control_while(_, blockData):
 
 def control_stop(_, blockData):
     OPTION = blockData["fields"]["STOP_OPTION"][0]
+
+    if OPTION == "all":
+        return f'exitSong(true)'
+
     return f'return --[[TYPEOF {OPTION}]]'

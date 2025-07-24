@@ -8,6 +8,8 @@ import os
 import re
 import shutil
 import time
+from wand.image import Image
+from wand.color import Color
 from tkinter import filedialog
 
 import events
@@ -296,7 +298,7 @@ def main():
     os.mkdir("export/data/scratch")
 
     with open("export/weeks/scratchWeek.json", "w") as f:
-        f.write('{"songs":[["Scratch","bf",[12,181,0]]],"hideFreeplay":false,"weekBackground":"","difficulties":"Normal","weekCharacters":["","",""],"storyName":"Converted Using Nael"s SB3 to FNF Script","weekName":"","freeplayColor":[146,113,253],"hideStoryMode":false,"weekBefore":"","startUnlocked":false}')
+        f.write('{"songs":[["Scratch","bf",[12,181,0]]],"hideFreeplay":false,"weekBackground":"","difficulties":"Normal","weekCharacters":["","",""],"storyName":"Converted Using Nael\'s SB3 to FNF Script","weekName":"","freeplayColor":[146,113,253],"hideStoryMode":false,"weekBefore":"","startUnlocked":false}')
         f.close()
 
     for diff in ["", "-normal"]:
@@ -410,6 +412,15 @@ def main():
         if target["isStage"]:
             compiledList.append('\nfunction onCreate()\nmakeLuaSprite(\"stage\")\nmakeGraphic(\"stage\", 1920, 1080, \"FFFFFF\")\nsetObjectCamera(\"stage\", \"hud\")\naddLuaSprite(\"stage\")\nsetProperty(\"camGame.alpha\", 0)\nend')
             compiledList.append(f'return {sanitizeVar(spriteName)}_vars')
+        
+        for costume in target["costumes"]:
+            zip.extract(costume["md5ext"])
+            png = costume["md5ext"].replace(".svg", ".png")
+            img = Image(filename=costume["md5ext"])
+            img.format = 'png'
+            img.transparent_color(Color("#FFFFFF"), alpha=0)
+            img.save(filename=f"export/images/{png}")
+            os.remove(costume["md5ext"])
 
         with open(f"export/scripts/{spriteName}.lua", "w") as f:
             f.write('\n'.join(compiledList))
@@ -424,7 +435,7 @@ def main():
         os.remove("stageVars")
 
     n = open("export/scripts/main_func.lua", "w")
-    n.write('function onUpdate(_)setTextString("scoreTxt","")for i=0,1 do for j=0,3 do setPropertyFromGroup(i==0 and"opponentStrums"or"playerStrums",j,"visible",false)end end if keyboardPressed("ESCAPE")then exitSong()end end function onStartCountdown()return Function_Stop end function onCreatePost()for v0=0,1 do makeLuaSprite("a_"..v0,"",v0==0 and 480 or 0,v0==1 and 360 or 0);makeGraphic("a_"..v0,999,999,"000000");setObjectCamera("a_"..v0,"other");addLuaSprite("a_"..v0);end end')
+    n.write('function onUpdate(_)setTextString("scoreTxt","")for i=0,1 do for j=0,3 do setPropertyFromGroup(i==0 and"opponentStrums"or"playerStrums",j,"visible",false)end end if keyboardPressed("ESCAPE")then exitSong()end end function onStartCountdown()return Function_Stop end function onCreatePost()for v0=0,1 do makeLuaSprite("a_"..v0,"",v0==0 and 480 or 0,v0==1 and 360 or 0);makeGraphic("a_"..v0,999,999,"000000");setObjectCamera("a_"..v0,"other");addLuaSprite("a_"..v0);end runHaxeCode("FlxG.updateFramerate = 30;FlxG.drawFramerate = 30;")end function onDestroy()runHaxeCode("FlxG.updateFramerate = 60;FlxG.drawFramerate = 60;")end')
     n.close()
     print(f"FULLY DONE! Saved in {round(time.time() - start, 5)} seconds!")
 

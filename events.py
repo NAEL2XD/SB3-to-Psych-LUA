@@ -14,15 +14,20 @@ def event_whenflagclicked(spriteName, _):
     try:
         x = f["x"]
         y = f["y"]
+        visible = f["visible"]
+        costume = f["costumes"][0]["assetId"]
     except:
         x = 0
         y = 0
+        visible = True
+        costume = spriteName
 
     containsONCREATE = True
     return f"""-- Generated using Nael's SB3 to Psych Lua! https://github.com/NAEL2XD/SB3-to-Psych-LUA
     function onCreate()
-    makeLuaSprite("{spriteName}", "{spriteName}", {x}+240, {y}+180)
-    setObjectCamera("{spriteName}", "hud")
+    makeLuaSprite("{spriteName}", "{costume}", {x}+240, {y}+180)
+    setObjectCamera("{spriteName}", "other")
+    setProperty("{spriteName}.visible", {str(visible).lower()})
     addLuaSprite("{spriteName}")
     
     addHaxeLibrary("Timer", "haxe")
