@@ -292,6 +292,7 @@ def main():
 
     os.mkdir("export")
     os.mkdir("export/scripts")
+    os.mkdir("export/sounds")
     os.mkdir("export/images")
     os.mkdir("export/weeks")
     os.mkdir("export/data")
@@ -414,13 +415,21 @@ def main():
             compiledList.append(f'return {sanitizeVar(spriteName)}_vars')
         
         for costume in target["costumes"]:
-            zip.extract(costume["md5ext"])
-            png = costume["md5ext"].replace(".svg", ".png")
-            img = Image(filename=costume["md5ext"])
+            f = costume["md5ext"]
+            o = costume["assetId"]
+            zip.extract(f)
+            img = Image(filename=f)
             img.format = 'png'
             img.transparent_color(Color("#FFFFFF"), alpha=0)
-            img.save(filename=f"export/images/{png}")
-            os.remove(costume["md5ext"])
+            img.save(filename=f"export/images/{o}")
+            os.remove(f)
+
+        for sound in target["sounds"]:
+            f = sound["md5ext"]
+            o = sound["assetId"]
+            zip.extract(f)
+            os.system(f"ffmpeg -i {f} -acodec libvorbis export/sounds/{o}.ogg")
+            os.remove(f)
 
         with open(f"export/scripts/{spriteName}.lua", "w") as f:
             f.write('\n'.join(compiledList))
