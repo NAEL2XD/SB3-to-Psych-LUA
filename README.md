@@ -4,6 +4,20 @@ I made it for fun, still in WIP.
 
 Note, may cause a lotta bugs sorry
 
+# REQUIREMENTS:
+
+Requires [FFMPEG](https://ffmpeg.org/download.html) installed, needed for audio conversion.
+
+<details>
+    <summary>Requires those python libraries:</summary>
+    
+    ```python
+    Wand
+    ```
+
+    Also available in requirements.txt so you can do `pip install -r requirements.txt`
+</details>
+
 ### Progress:
 - Motion: (16/18)
 - Looks: (14/20)

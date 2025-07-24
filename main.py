@@ -428,7 +428,7 @@ def main():
             f = sound["md5ext"]
             o = sound["assetId"]
             zip.extract(f)
-            os.system(f"ffmpeg -i {f} -acodec libvorbis export/sounds/{o}.ogg")
+            os.system(f"ffmpeg -hide_banner -loglevel quiet -i {f} -acodec libvorbis export/sounds/{o}.ogg")
             os.remove(f)
 
         with open(f"export/scripts/{spriteName}.lua", "w") as f:
