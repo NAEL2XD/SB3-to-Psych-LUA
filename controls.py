@@ -17,10 +17,8 @@ def control_repeat(_, blockData):
     except: SUBSTACK = ""
     return f'for _=1,{TIMES} do\n{SUBSTACK}\nend'
 
-def control_forever(_, blockData):
-    try: SUBSTACK = main.processBlock(blockData["inputs"]["SUBSTACK"][1], True)
-    except: SUBSTACK = ""
-    return f'function onUpdate(__)\n{SUBSTACK}\nend'
+def control_forever(_, _2):
+    return f'updateCounter = updateCounter + 1'
 
 def control_if(_, blockData):
     try: COND = main.processBlock(blockData["inputs"]["CONDITION"][1], True)

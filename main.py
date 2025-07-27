@@ -229,7 +229,7 @@ def fetchOPCodes():
         "procedures_definition": data.procedures_definition,
         "procedures_call": data.procedures_call,
         "argument_reporter_string_number": data.argument_reporter_string_number,
-        "argument_reporter_boolean": data.argument_reporter_boolean,
+        "argument_reporter_boolean": data.argument_reporter_string_number,
     }
 
 curClass = {}
@@ -260,14 +260,13 @@ def processBlock(blockID, repeatUntilNextIsNull=False):
             return "nil --[=[data returned none, skipping]=]"
 
     if repeatUntilNextIsNull:
-        metadata = getMetadata()
-        saveMetedata(metadata)
-
         stack = []
 
         while blockID != None:
+            metadata = getMetadata()
             metadata["line"] += 1
             saveMetedata(metadata)
+
             stack.append(processBlock(blockID))
             try:
                 blockID = curClass["blocks"].get(blockID)["next"]
@@ -285,10 +284,7 @@ def processBlock(blockID, repeatUntilNextIsNull=False):
 
 def main():
     global curClass, target, opcodes
-    addToPrecaches = [
-        [],
-        []
-    ]
+    addToPrecaches = [[], []]
 
     os.mkdir("export")
     os.mkdir("export/scripts")
@@ -315,9 +311,6 @@ def main():
     project = json.load(open("project.json", "r", encoding="utf=8"))
     for target in project["targets"]:
         events.containsONCREATE = False
-
-        if retriveJSONSetting("printingDebug"):
-            print(list(target["blocks"].keys()))
 
         spriteName = sanitizeVar(target["name"])
         n = open("spriteName", "w")
@@ -392,8 +385,9 @@ def main():
         n.close()
 
         if not target["isStage"]:
-            compiledList.append('local stage = require("mods.scripts.Stage")\nluaDebugMode = true\nlocal oldTimer = 0')
+            compiledList.append('local stage = require("mods.scripts.Stage")\nluaDebugMode = true\nlocal oldTimer = 0\nlocal updateCounter = 0')
         else:
+            compiledList.append('luaDebugMode = true\nlocal oldTimer = 0')
             n = open("stageVars", "w")
             n.write(open("listVars", "r").read())
             n.close()
@@ -406,11 +400,25 @@ def main():
                         gottenBlockIDS.append([bID, searchFor])
             return gottenBlockIDS
 
-        for blockID, typeof in searchForBlockOPCodes(target, ["event_whenflagclicked", "event_whenbroadcastreceived", "procedures_definition"]):
+        onUpdateExists = False
+        onUpdateCount = 1
+        for blockID, typeof in searchForBlockOPCodes(target, ["event_whenflagclicked", "event_whenbroadcastreceived", "procedures_definition", "control_forever"]):
             if typeof == "procedures_definition":
                 metadata["line"] += 1
                 saveMetedata(metadata)
                 compiledList.append(processBlock(blockID))
+
+                continue
+
+            elif typeof == "control_forever":
+                if not onUpdateExists:
+                    onUpdateExists = True
+                    compiledList.append("function onUpdate(__)")
+                
+                compiledList.append(f"if updateCounter == {onUpdateCount} then")
+                compiledList.append(processBlock(blockID))
+                compiledList.append(f"end")
+
                 continue
 
             while blockID != None:
@@ -418,7 +426,12 @@ def main():
                 if retriveJSONSetting("addJsonDebug"):
                     compiledList.append(f'--[=[{blockData}]=]')
 
-                compiledList.append(processBlock(blockID))
+                out = processBlock(blockID)
+                if out.startswith("updateCounter"):
+                    break
+
+                print(f"out: {out}")
+                compiledList.append(out)
                 meta = getMetadata()
                 if typeof == "event_whenbroadcastreceived" or meta["shouldSkip"]:
                     if meta["shouldSkip"]:
@@ -433,6 +446,8 @@ def main():
 
         if events.containsONCREATE:
             compiledList.append("end")
+        if onUpdateExists:
+            compiledList.append("end")
 
         compiledList.append('function mouseOverlaps(tag)\naddHaxeLibrary("Reflect")\nreturn runHaxeCode([[\nvar obj = game.getLuaObject("]]..tag..[[");\nif (obj == null) obj = Reflect.getProperty(game, "]]..tag..[[");\nif (obj == null) return false;\nreturn obj.getScreenBounds(null, obj.cameras[0]).containsPoint(FlxG.mouse.getScreenPosition(obj.cameras[0]));\n]])\nend')
         compiledList.append('function itemnumoflist(list,str)\nlocal count=0\nfor _=1,#list do\nif list[_]==str then count=count+1 end\nend\nreturn count\nend')
@@ -443,14 +458,6 @@ def main():
         compiledList.append('function snew(snd,func)\nlocal name="snd_"..getRandomInt(-1000000000,1000000000)\nplaySound(snd,1,name)\ntable.insert(threads,{name,func})\nend')
         compiledList.append('function onSoundFinished(tag)\nimpl(tag)\nend')
         compiledList.append('function impl(t)\nfor i=1,#threads do\nif threads[i][1]==t then\nthreads[i][2]()\ntable.remove(threads,i)\nend\nend\nend')
-        
-        i = 0
-        for strstuff in compiledList:
-            if strstuff.startswith("function onUpdate(__)"):
-                compiledList[i] = ""
-                compiledList.append(strstuff)
-                break
-            i += 1
         
         if target["isStage"]:
             compiledList.append('\nfunction onCreate()\nmakeLuaSprite(\"stage\")\nmakeGraphic(\"stage\", 1920, 1080, \"FFFFFF\")\nsetObjectCamera(\"stage\", \"hud\")\naddLuaSprite(\"stage\")\nsetProperty(\"camGame.alpha\", 0)\nend')
@@ -477,9 +484,9 @@ def main():
         n.write("function onCreate()\n")
     
         for costume in addToPrecaches[0]:
-            n.write(f'    precacheImage("{costume}")\n')
+            n.write(f'precacheImage("{costume}")')
         for sounds in addToPrecaches[1]:
-            n.write(f'    precacheSound("{sounds}")\n')
+            n.write(f'precacheSound("{sounds}")')
         
         n.write("end")
         n.close()

@@ -98,10 +98,6 @@ def argument_reporter_string_number(_, blockData):
     VALUE = main.sanitizeVar(blockData["fields"]["VALUE"][0])
     return f"arg__{VALUE}"
 
-def argument_reporter_boolean(_, blockData):
-    VALUE = main.sanitizeVar(blockData["fields"]["VALUE"][0])
-    return f"arg__{VALUE}"
-
 def procedures_call(_, blockData):
     ARGS = []
     proccode = main.sanitizeVar(blockData["mutation"]["proccode"])

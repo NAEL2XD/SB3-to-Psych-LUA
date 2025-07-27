@@ -43,4 +43,4 @@ def event_whenbroadcastreceived(_, blockData):
 
 def event_broadcast(_, blockData):
     SANITIZE = main.getInputVar(blockData["inputs"]["BROADCAST_INPUT"]).replace(" ", "_")
-    return f'caller = {SANITIZE}\ncallOnLuas(caller, {{}})'
+    return f'callOnLuas(caller, {SANITIZE})'
