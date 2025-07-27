@@ -4,7 +4,7 @@ I made it for fun, still in WIP.
 
 Note, may cause a lotta bugs sorry
 
-# REQUIREMENTS:
+### REQUIREMENTS:
 
 Requires [FFMPEG](https://ffmpeg.org/download.html) installed, needed for audio conversion.
 
@@ -29,5 +29,11 @@ Requires [FFMPEG](https://ffmpeg.org/download.html) installed, needed for audio 
 - Variables: (3/3)
 - Lists: (10/10)
 - Blocks: (1/1)
+- TOTAL: (82/135)
 
-## TOTAL: 82/135
+### `settings.json` settings:
+
+`addJsonDebug` - Adds debug blocks per line, will be commented for it. Defaults to `false`.
+`doCleanup` - Whatever or not you wanna clean up the progressive files (spriteName, class, etc.). Defaults to `true`.
+`printingDebug` - Whatever or not you wanna see the line printings per block. Defaults to `false`.
+`doPrecache` - Makes another file with lists of precaches.  Defaults to `true`.

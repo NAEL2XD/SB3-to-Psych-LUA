@@ -21,21 +21,19 @@ def looks_changeeffectby(spriteName, blockData):
     if FIELDS == "GHOST":
         FIELDS = "alpha"
     else:
-        FIELDS = f"alpha --[[{FIELDS} is not supported.]]"
+        FIELDS = f"alpha"
 
     return f'setProperty("{spriteName}.{FIELDS}", getProperty("{spriteName}.{FIELDS}") - ({CHANGE} / 100))'
 
 def looks_seteffectto(spriteName, blockData):
     VALUE = main.getInputVar(blockData["inputs"]["VALUE"])
     FIELDS = blockData["fields"]["EFFECT"][0]
-    ARG = ""
+    ARG = f"-({VALUE} / 100) + 1"
 
     if FIELDS == "GHOST":
         FIELDS = "alpha"
-        ARG = f"(-{VALUE} / 100) + 1"
     else:
-        FIELDS = f"alpha --[[{FIELDS} is not supported.]]"
-        ARG = f"(-{VALUE} / 100) + 1"
+        FIELDS = "alpha"
 
     return f'setProperty("{spriteName}.{FIELDS}", {ARG})'
 

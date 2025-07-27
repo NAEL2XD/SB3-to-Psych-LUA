@@ -6,8 +6,9 @@ import json
 import ast
 import os
 import re
-import shutil
 import time
+import glob
+import shutil
 from wand.image import Image
 from wand.color import Color
 from tkinter import filedialog
@@ -15,24 +16,20 @@ from tkinter import filedialog
 import events
 import motion
 import looks
+import sounds
 import controls
 import operators
 import sensing
 import data
 
-zip = zipfile.ZipFile(filedialog.askopenfilename(filetypes=[("Scratch Project 3.0", "*.sb3")]))
-
 def cleanup():
-    if os.path.exists("save"):
-        os.remove("save")
-    if os.path.exists("spriteName"):
-        os.remove("spriteName")
-    if os.path.exists("listVars"):
-        os.remove("listVars")
-    if os.path.exists("class"):
-        os.remove("class")
-    if os.path.exists("metadata"):
-        os.remove("metadata")
+    for file in ["save", "spriteName", "listVars", "class", "metadata"]:
+        if os.path.exists(file):
+            os.remove(file)
+
+    for rems in ["png", "svg", "wav", "mp3"]:
+        for files in glob.glob(f"**.{rems}"):
+            os.remove(files)
 
 def retriveJSONSetting(schema):
     return json.load(open("settings.json"))[schema]
@@ -67,15 +64,12 @@ def isNumOrFunc(s: str):
     if ("(" in s and ")" in s) or s in ["math.abs", "math.floor", "math.ceil", "math.sin", "math.cos", "math.tan", "math.asin", "math.acos", "math.atan", "math.log", "math.log10", "math.exp", "math.sqrt", "getProperty", "setProperty", "runHaxeCode"]:
         return s
     
-    if s.lower() == "false" or s.lower() == "true":
-        return s.lower()
+    t = s.lower()
+    if t == "false" or t == "true":
+        return t
     
-    sprite_name = ""
-    if os.path.exists("spriteName"):
-        with open("spriteName", "r") as f:
-            sprite_name = f.read().strip()
-    
-    if sprite_name and s.startswith(f"{sprite_name}."):
+    spriteName = open("spriteName", "r").read().strip()
+    if spriteName and s.startswith(f"{spriteName}."):
         return s
     
     s = s.replace('"', '\\"')
@@ -86,6 +80,7 @@ def sanitizeVar(var):
 
 def checkIfStageAndReturnVal(type):
     isStage = True
+    typeof = []
     for fileNames in ["stageVars", "listVars"]:
         for varData in open(fileNames).read().splitlines():
             if varData.split("->")[0].lower() == sanitizeVar(type).lower():
@@ -163,6 +158,11 @@ def fetchOPCodes():
         "looks_gotofrontback": looks.looks_gotofrontback,
         "looks_goforwardbackwardlayers": looks.looks_goforwardbackwardlayers,
         "looks_size": looks.looks_size,
+
+        # Sounds
+        "sound_play": sounds.sound_play,
+        "sound_sounds_menu": sounds.sound_play,
+        "sound_playuntildone": sounds.sound_playuntildone,
 
         # Controls
         "control_wait": controls.control_wait,
@@ -285,10 +285,10 @@ def processBlock(blockID, repeatUntilNextIsNull=False):
 
 def main():
     global curClass, target, opcodes
-    start = time.time()
-
-    if os.path.exists("export"):
-        shutil.rmtree("export")
+    addToPrecaches = [
+        [],
+        []
+    ]
 
     os.mkdir("export")
     os.mkdir("export/scripts")
@@ -307,7 +307,10 @@ def main():
             f.write('{"song":{"player1":"bf","notes":[],"player2":"gf","song":"Scratch","speed":1,"gfVersion":"gf","events":[],"stage":"stage","needsVoices":true,"bpm":100}}')
             f.close()
 
+    zip = zipfile.ZipFile(filedialog.askopenfilename(filetypes=[("Scratch Project 3.0", "*.sb3")]))
     zip.extract("project.json")
+
+    start = time.time()
     opcodes = fetchOPCodes()
     project = json.load(open("project.json", "r", encoding="utf=8"))
     for target in project["targets"]:
@@ -323,6 +326,7 @@ def main():
 
         metadata = {
             "line": 0,
+            "shouldSkip": False
         }
         saveMetedata(metadata)
             
@@ -331,10 +335,39 @@ def main():
         n.write(json.dumps(target))
         n.close()
 
+        for costume in target["costumes"]:
+            f = costume["md5ext"]
+            o = costume["name"]
+
+            if os.path.exists(f"export/images/{o}.png"):
+                continue
+
+            zip.extract(f)
+            if os.path.getsize(f) > 250: # Limit the size so that it doesn't throw an error
+                if f.endswith("png"):
+                    os.rename(f, f"export/images/{f}")
+                else:
+                    img = Image(filename=f)
+                    img.format = 'png'
+                    img.transparent_color(Color("#FFFFFF"), alpha=0)
+                    img.save(filename=f"export/images/{o}.png")
+                addToPrecaches[0].append(o)
+
+        for sound in target["sounds"]:
+            f = sound["md5ext"]
+            o = sound["name"]
+
+            if os.path.exists(f"export/sounds/{o}.ogg"):
+                continue
+
+            zip.extract(f)
+            os.system(f"ffmpeg -hide_banner -loglevel quiet -i {f} -acodec libvorbis export/sounds/{o}.ogg")
+            addToPrecaches[1].append(o)
+
         n = open("listVars", "w")
 
         # Collecting the variables
-        compiledList = [f'local {sanitizeVar(spriteName)}_vars = {{']
+        compiledList = [f'-- Generated using Nael\'s SB3 to Psych Lua! https://github.com/NAEL2XD/SB3-to-Psych-LUA\nlocal {sanitizeVar(spriteName)}_vars = {{']
         for types in ["variables", "lists"]:
             for var in list(target[types].keys()):
                 var = target[types][var]
@@ -355,7 +388,7 @@ def main():
                 vorl = "v" if types == "variables" else "l"
                 n.write(f"{name}->{vorl}\n")
                 compiledList.append(f'{name}_{vorl} = {value},')
-        compiledList.append("}")
+        compiledList.append("}\nlocal threads = {}")
         n.close()
 
         if not target["isStage"]:
@@ -386,7 +419,12 @@ def main():
                     compiledList.append(f'--[=[{blockData}]=]')
 
                 compiledList.append(processBlock(blockID))
-                if typeof == "event_whenbroadcastreceived":
+                meta = getMetadata()
+                if typeof == "event_whenbroadcastreceived" or meta["shouldSkip"]:
+                    if meta["shouldSkip"]:
+                        meta["shouldSkip"] = False
+                        saveMetedata(meta)
+
                     break
 
                 metadata["line"] += 1
@@ -396,11 +434,15 @@ def main():
         if events.containsONCREATE:
             compiledList.append("end")
 
-        compiledList.append('function wait(n) if n>0 then os.execute(\"ping -n \"..tonumber(n+1)..\" localhost > NUL\") end end')
         compiledList.append('function mouseOverlaps(tag)\naddHaxeLibrary("Reflect")\nreturn runHaxeCode([[\nvar obj = game.getLuaObject("]]..tag..[[");\nif (obj == null) obj = Reflect.getProperty(game, "]]..tag..[[");\nif (obj == null) return false;\nreturn obj.getScreenBounds(null, obj.cameras[0]).containsPoint(FlxG.mouse.getScreenPosition(obj.cameras[0]));\n]])\nend')
         compiledList.append('function itemnumoflist(list,str)\nlocal count=0\nfor _=1,#list do\nif list[_]==str then count=count+1 end\nend\nreturn count\nend')
         compiledList.append('function listcontainsitem(list,str)\nfor _=1,#list do\nif string.find(list[_],str) then return true end\nend\nreturn false\nend')
-        compiledList.append('function daysSince2000()\nreturn (os.time()-os.time{year=2000,month=1,day=1})/86400\nend')
+        compiledList.append('function daysSince2000()\nreturn(os.time()-os.time{year=2000,month=1,day=1})/86400\nend')
+        compiledList.append('function tnew(time,func)\nlocal name="timer_"..getRandomInt(-1000000000,1000000000)\nrunTimer(name,time)\ntable.insert(threads,{name,func})\nend')
+        compiledList.append('function onTimerCompleted(tag)\nimpl(tag)\nend')
+        compiledList.append('function snew(snd,func)\nlocal name="snd_"..getRandomInt(-1000000000,1000000000)\nplaySound(snd,1,name)\ntable.insert(threads,{name,func})\nend')
+        compiledList.append('function onSoundFinished(tag)\nimpl(tag)\nend')
+        compiledList.append('function impl(t)\nfor i=1,#threads do\nif threads[i][1]==t then\nthreads[i][2]()\ntable.remove(threads,i)\nend\nend\nend')
         
         i = 0
         for strstuff in compiledList:
@@ -413,23 +455,6 @@ def main():
         if target["isStage"]:
             compiledList.append('\nfunction onCreate()\nmakeLuaSprite(\"stage\")\nmakeGraphic(\"stage\", 1920, 1080, \"FFFFFF\")\nsetObjectCamera(\"stage\", \"hud\")\naddLuaSprite(\"stage\")\nsetProperty(\"camGame.alpha\", 0)\nend')
             compiledList.append(f'return {sanitizeVar(spriteName)}_vars')
-        
-        for costume in target["costumes"]:
-            f = costume["md5ext"]
-            o = costume["assetId"]
-            zip.extract(f)
-            img = Image(filename=f)
-            img.format = 'png'
-            img.transparent_color(Color("#FFFFFF"), alpha=0)
-            img.save(filename=f"export/images/{o}")
-            os.remove(f)
-
-        for sound in target["sounds"]:
-            f = sound["md5ext"]
-            o = sound["assetId"]
-            zip.extract(f)
-            os.system(f"ffmpeg -hide_banner -loglevel quiet -i {f} -acodec libvorbis export/sounds/{o}.ogg")
-            os.remove(f)
 
         with open(f"export/scripts/{spriteName}.lua", "w") as f:
             f.write('\n'.join(compiledList))
@@ -446,8 +471,24 @@ def main():
     n = open("export/scripts/main_func.lua", "w")
     n.write('function onUpdate(_)setTextString("scoreTxt","")for i=0,1 do for j=0,3 do setPropertyFromGroup(i==0 and"opponentStrums"or"playerStrums",j,"visible",false)end end if keyboardPressed("ESCAPE")then exitSong()end end function onStartCountdown()return Function_Stop end function onCreatePost()for v0=0,1 do makeLuaSprite("a_"..v0,"",v0==0 and 480 or 0,v0==1 and 360 or 0);makeGraphic("a_"..v0,999,999,"000000");setObjectCamera("a_"..v0,"other");addLuaSprite("a_"..v0);end runHaxeCode("FlxG.updateFramerate = 30;FlxG.drawFramerate = 30;")end function onDestroy()runHaxeCode("FlxG.updateFramerate = 60;FlxG.drawFramerate = 60;")end')
     n.close()
+
+    if retriveJSONSetting("doPrecache"):
+        n = open("export/scripts/precache.lua", "w")
+        n.write("function onCreate()\n")
+    
+        for costume in addToPrecaches[0]:
+            n.write(f'    precacheImage("{costume}")\n')
+        for sounds in addToPrecaches[1]:
+            n.write(f'    precacheSound("{sounds}")\n')
+        
+        n.write("end")
+        n.close()
+
     print(f"FULLY DONE! Saved in {round(time.time() - start, 5)} seconds!")
 
 if __name__ == "__main__":
+    if os.path.isdir("export"):
+        shutil.rmtree("export")
+
     cleanup()
     main()

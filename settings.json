@@ -1,5 +1,6 @@
 {
     "addJsonDebug": false,
     "doCleanup": true,
-    "printingDebug": false
+    "printingDebug": false,
+    "doPrecache": true
 }

@@ -3,7 +3,12 @@ import main
 def control_wait(_, blockData):
     try: DURATION = main.getInputVar(blockData["inputs"]["DURATION"])
     except: DURATION = "0"
-    return f'wait({DURATION})'
+    try: FUNC = main.processBlock(blockData["next"], True)
+    except: FUNC = ""
+    meta = main.getMetadata()
+    meta["shouldSkip"] = True
+    main.saveMetedata(meta)
+    return f'tnew({DURATION}, function()\n{FUNC}\nend)'
 
 def control_repeat(_, blockData):
     try: TIMES = main.getInputVar(blockData["inputs"]["TIMES"])
