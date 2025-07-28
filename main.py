@@ -37,7 +37,7 @@ def retriveJSONSetting(schema):
 def getMetadata():
     return ast.literal_eval(open("metadata", "r").read())
 
-def saveMetedata(meta):
+def saveMetadata(meta):
     n = open("metadata", "w")
     n.write(str(meta))
     n.close()
@@ -99,7 +99,7 @@ def getInputVar(type):
 
     if isinstance(type[1], str):
         metadata["line"] += 1
-        saveMetedata(metadata)
+        saveMetadata(metadata)
         return isNumOrFunc(processBlock(type[1]))
     elif isinstance(type[1], list) and len(type) == 3: # data var
         sprName = open("spriteName", "r").read()
@@ -265,7 +265,7 @@ def processBlock(blockID, repeatUntilNextIsNull=False):
         while blockID != None:
             metadata = getMetadata()
             metadata["line"] += 1
-            saveMetedata(metadata)
+            saveMetadata(metadata)
 
             stack.append(processBlock(blockID))
             try:
@@ -273,6 +273,9 @@ def processBlock(blockID, repeatUntilNextIsNull=False):
             except TypeError:
                 # Try again
                 blockID = json.load(open("class", "r", encoding="utf-8"))["blocks"].get(blockID)["next"]
+
+            if getMetadata()["shouldSkip"]:
+                break
             
         return '\n'.join(stack)
 
@@ -310,8 +313,6 @@ def main():
     opcodes = fetchOPCodes()
     project = json.load(open("project.json", "r", encoding="utf=8"))
     for target in project["targets"]:
-        events.containsONCREATE = False
-
         spriteName = sanitizeVar(target["name"])
         n = open("spriteName", "w")
         n.write(sanitizeVar(spriteName))
@@ -319,9 +320,10 @@ def main():
 
         metadata = {
             "line": 0,
-            "shouldSkip": False
+            "shouldSkip": False,
+            "containsOnCreate": False
         }
-        saveMetedata(metadata)
+        saveMetadata(metadata)
             
         curClass = target
         n = open("class", "w", encoding="utf-8")
@@ -400,15 +402,19 @@ def main():
                         gottenBlockIDS.append([bID, searchFor])
             return gottenBlockIDS
 
+        onCreateExists = False
         onUpdateExists = False
         onUpdateCount = 1
-        for blockID, typeof in searchForBlockOPCodes(target, ["event_whenflagclicked", "event_whenbroadcastreceived", "procedures_definition", "control_forever"]):
+        for blockID, typeof in searchForBlockOPCodes(target, ["event_whenflagclicked", "control_forever", "event_whenbroadcastreceived", "procedures_definition"]):
             if typeof == "procedures_definition":
                 metadata["line"] += 1
-                saveMetedata(metadata)
+                saveMetadata(metadata)
                 compiledList.append(processBlock(blockID))
 
                 continue
+
+            elif typeof == "event_whenflagclicked":
+                onCreateExists = True
 
             elif typeof == "control_forever":
                 if not onUpdateExists:
@@ -416,8 +422,9 @@ def main():
                     compiledList.append("function onUpdate(__)")
                 
                 compiledList.append(f"if updateCounter == {onUpdateCount} then")
-                compiledList.append(processBlock(blockID))
-                compiledList.append(f"end")
+                compiledList.append(processBlock(target["blocks"].get(blockID)["inputs"]["SUBSTACK"][1], True))
+                compiledList.append("end")
+                onUpdateCount += 1
 
                 continue
 
@@ -426,28 +433,23 @@ def main():
                 if retriveJSONSetting("addJsonDebug"):
                     compiledList.append(f'--[=[{blockData}]=]')
 
-                out = processBlock(blockID)
-                if out.startswith("updateCounter"):
-                    break
-
-                print(f"out: {out}")
-                compiledList.append(out)
+                compiledList.append(processBlock(blockID))
                 meta = getMetadata()
-                if typeof == "event_whenbroadcastreceived" or meta["shouldSkip"]:
+                if (typeof == "event_whenbroadcastreceived" or blockData["opcode"] == "sound_playuntildone") or meta["shouldSkip"]:
                     if meta["shouldSkip"]:
                         meta["shouldSkip"] = False
-                        saveMetedata(meta)
+                        saveMetadata(meta)
 
                     break
 
                 metadata["line"] += 1
-                saveMetedata(metadata)
+                saveMetadata(metadata)
                 blockID = blockData["next"]
 
-        if events.containsONCREATE:
+        if onCreateExists:
             compiledList.append("end")
         if onUpdateExists:
-            compiledList.append("end")
+            compiledList.append('end')
 
         compiledList.append('function mouseOverlaps(tag)\naddHaxeLibrary("Reflect")\nreturn runHaxeCode([[\nvar obj = game.getLuaObject("]]..tag..[[");\nif (obj == null) obj = Reflect.getProperty(game, "]]..tag..[[");\nif (obj == null) return false;\nreturn obj.getScreenBounds(null, obj.cameras[0]).containsPoint(FlxG.mouse.getScreenPosition(obj.cameras[0]));\n]])\nend')
         compiledList.append('function itemnumoflist(list,str)\nlocal count=0\nfor _=1,#list do\nif list[_]==str then count=count+1 end\nend\nreturn count\nend')

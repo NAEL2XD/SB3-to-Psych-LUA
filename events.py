@@ -1,12 +1,8 @@
 import main
 import ast
 
-containsONCREATE = False
-
 def event_whenflagclicked(spriteName, _):
-    global containsONCREATE
-
-    if containsONCREATE:
+    if main.getMetadata()["containsOnCreate"]:
         return ""
     
     f = ast.literal_eval(open("save", "r", encoding="utf-8").read().split("[[||]]")[0])
@@ -22,7 +18,10 @@ def event_whenflagclicked(spriteName, _):
         visible = True
         costume = spriteName
 
-    containsONCREATE = True
+    meta = main.getMetadata()
+    meta["containsOnCreate"] = True
+    main.saveMetadata(meta)
+    
     return f"""function onCreatePost()
     makeLuaSprite("{spriteName}", "{costume}", {x}+240, {y}+180)
     setObjectCamera("{spriteName}", "other")

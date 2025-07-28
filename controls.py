@@ -7,7 +7,7 @@ def control_wait(_, blockData):
     except: FUNC = ""
     meta = main.getMetadata()
     meta["shouldSkip"] = True
-    main.saveMetedata(meta)
+    main.saveMetadata(meta)
     return f'tnew({DURATION}, function()\n{FUNC}\nend)'
 
 def control_repeat(_, blockData):
@@ -17,7 +17,7 @@ def control_repeat(_, blockData):
     except: SUBSTACK = ""
     return f'for _=1,{TIMES} do\n{SUBSTACK}\nend'
 
-def control_forever(_, _2):
+def control_forever(_, blockData):
     return f'updateCounter = updateCounter + 1'
 
 def control_if(_, blockData):
