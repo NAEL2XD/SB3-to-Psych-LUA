@@ -32,6 +32,9 @@ Requires [FFMPEG](https://ffmpeg.org/download.html) installed, needed for audio 
 ### `settings.json` settings:
 
 `addJsonDebug` - Adds debug blocks per line, will be commented for it. Defaults to `false`.
+
 `doCleanup` - Whatever or not you wanna clean up the progressive files (spriteName, class, etc.). Defaults to `true`.
+
 `printingDebug` - Whatever or not you wanna see the line printings per block. Defaults to `false`.
+
 `doPrecache` - Makes another file with lists of precaches.  Defaults to `true`.
