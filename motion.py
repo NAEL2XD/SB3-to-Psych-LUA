@@ -13,17 +13,23 @@ def motion_turnright(spriteName, blockData):
     return f'setProperty("{spriteName}.angle",getProperty("{spriteName}.angle")+{DEGREES})'
 
 def motion_goto(spriteName, blockData):
-    DEGREES = blockData["inputs"]["DEGREES"]
-
-    if isinstance(DEGREES[0], int):
-        return main.processBlock(DEGREES)
+    if blockData["fields"] != {}:
+        to = blockData["fields"]["TO"][0]
+        if to == "_random_":
+            return ["getRandomInt(0, 480)", "getRandomInt(0, 360)"]
+        elif to == "_mouse_":
+            return ['getMouseX("hud")', 'getMouseY("hud")']
+        else: # Assuming it's a sprite
+            return [f'getProperty("{to}.x")', f'getProperty("{to}.y")']
+        
+    TO = main.processBlock(blockData["inputs"]["TO"])
     
-    if DEGREES[1] == "_random_":
+    if TO[1] == "_random_":
         return f'setProperty("{spriteName}.x",getRandomInt(0, 480)+240)\nsetProperty("{spriteName}.y",getRandomInt(0, 360)+180)'
-    elif DEGREES[1] == "_mouse_":
+    elif TO[1] == "_mouse_":
         return f'setProperty("{spriteName}.x",getMouseX("hud"))\nsetProperty("{spriteName}.y",getMouseY("hud"))'
     else: # Assuming it's a sprite
-        return f'setProperty("{spriteName}.x",getProperty("{DEGREES[1]}.x"))\nsetProperty("{spriteName}.y",getProperty("{DEGREES[1]}.y"))'
+        return f'setProperty("{spriteName}.x",getProperty("{TO[1]}.x"))\nsetProperty("{spriteName}.y",getProperty("{TO[1]}.y"))'
     
 def motion_gotoxy(spriteName, blockData):
     X = main.getInputVar(blockData["inputs"]["X"])

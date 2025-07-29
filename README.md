@@ -10,10 +10,8 @@ Requires [FFMPEG](https://ffmpeg.org/download.html) installed, needed for audio 
 
 <details>
     <summary>Requires those python libraries:</summary>
-    
-    ```python
+
     Wand
-    ```
 
     Also available in requirements.txt so you can do `pip install -r requirements.txt`
 </details>
@@ -21,15 +19,15 @@ Requires [FFMPEG](https://ffmpeg.org/download.html) installed, needed for audio 
 ### Progress:
 - Motion: (16/18)
 - Looks: (14/20)
-- Sound: (0/9)
-- Events: (2/8)
+- Sound: (9/9)
+- Events: (3/8)
 - Controls: (9/12)
 - Sensing: (11/18)
 - Operators: (18/18)
 - Variables: (3/3)
 - Lists: (10/10)
 - Blocks: (1/1)
-- TOTAL: (82/135)
+- TOTAL: (94/135)
 
 ### `settings.json` settings:
 

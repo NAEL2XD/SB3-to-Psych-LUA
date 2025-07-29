@@ -18,7 +18,11 @@ def control_repeat(_, blockData):
     return f'for _=1,{TIMES} do\n{SUBSTACK}\nend'
 
 def control_forever(_, blockData):
-    return f'updateCounter = updateCounter + 1'
+    bid = open("currentBID", "r", encoding="utf-8")
+    blockID = bid.read()
+    bid.close()
+
+    return f'updateBlock = "{main.sanitizeVar(blockID)}"'
 
 def control_if(_, blockData):
     try: COND = main.processBlock(blockData["inputs"]["CONDITION"][1], True)

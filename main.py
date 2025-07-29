@@ -23,7 +23,7 @@ import sensing
 import data
 
 def cleanup():
-    for file in ["save", "spriteName", "listVars", "class", "metadata"]:
+    for file in ["save", "spriteName", "listVars", "class", "metadata", "currentBID"]:
         if os.path.exists(file):
             os.remove(file)
 
@@ -49,8 +49,11 @@ def isNumOrFunc(s: str):
     if not s or len(s) == 0:
         return '""'
     
-    if (s.startswith('"') and s.endswith('"')) or (s.startswith("'") and s.endswith("'")):
-        return s
+    # Great thinking scratchers
+    if s == '"':
+        return "'\"'"
+    elif s == "'":
+        return '"\'"'
     
     try:
         float(s)
@@ -70,6 +73,9 @@ def isNumOrFunc(s: str):
     
     spriteName = open("spriteName", "r").read().strip()
     if spriteName and s.startswith(f"{spriteName}."):
+        return s
+    
+    if s.startswith('"') and s.endswith('"'):
         return s
     
     s = s.replace('"', '\\"')
@@ -96,10 +102,10 @@ def checkIfStageAndReturnVal(type):
 
 def getInputVar(type):
     metadata = getMetadata()
+    metadata["line"] += 1
+    saveMetadata(metadata)
 
     if isinstance(type[1], str):
-        metadata["line"] += 1
-        saveMetadata(metadata)
         return isNumOrFunc(processBlock(type[1]))
     elif isinstance(type[1], list) and len(type) == 3: # data var
         sprName = open("spriteName", "r").read()
@@ -163,6 +169,13 @@ def fetchOPCodes():
         "sound_play": sounds.sound_play,
         "sound_sounds_menu": sounds.sound_play,
         "sound_playuntildone": sounds.sound_playuntildone,
+        "sound_stopallsounds": sounds.sound_stopallsounds,
+        "sound_changeeffectby": sounds.sound_changeeffectby,
+        "sound_seteffectto": sounds.sound_seteffectto,
+        "sound_cleareffects": sounds.sound_cleareffects,
+        "sound_changevolumeby": sounds.sound_changevolumeby,
+        "sound_setvolumeto": sounds.sound_setvolumeto,
+        "sound_volume": sounds.sound_volume,
 
         # Controls
         "control_wait": controls.control_wait,
@@ -240,6 +253,10 @@ def processBlock(blockID, repeatUntilNextIsNull=False):
 
     if blockID == None:
         return ""
+    
+    n = open("currentBID", "w", encoding="utf-8")
+    n.write(blockID)
+    n.close()
 
     # Python breaks if it's recursive and on a file, my next move
     if curClass == {}:
@@ -285,6 +302,7 @@ def processBlock(blockID, repeatUntilNextIsNull=False):
 
     return f"--[=[Unsupported OPCODE: {opc}]=]"
 
+blockID = ""
 def main():
     global curClass, target, opcodes
     addToPrecaches = [[], []]
@@ -330,33 +348,34 @@ def main():
         n.write(json.dumps(target))
         n.close()
 
+        # Make exception checks and skip them if caught (seriously why.)
         for costume in target["costumes"]:
             f = costume["md5ext"]
             o = costume["name"]
 
-            if os.path.exists(f"export/images/{o}.png"):
-                continue
-
             zip.extract(f)
-            if os.path.getsize(f) > 250: # Limit the size so that it doesn't throw an error
-                if f.endswith("png"):
+            if f.endswith("png"):
+                if not os.path.exists(f"export/images/{f}"):
                     os.rename(f, f"export/images/{f}")
                 else:
+                    os.remove(f)
+            else:
+                try:
                     img = Image(filename=f)
                     img.format = 'png'
                     img.transparent_color(Color("#FFFFFF"), alpha=0)
                     img.save(filename=f"export/images/{o}.png")
-                addToPrecaches[0].append(o)
+                except Exception as e:
+                    print(f"Skipping ID {f} because of invalid SVG.\nReason: {e}")
+                    os.remove(f)
+            addToPrecaches[0].append(o)
 
         for sound in target["sounds"]:
             f = sound["md5ext"]
             o = sound["name"]
 
-            if os.path.exists(f"export/sounds/{o}.ogg"):
-                continue
-
             zip.extract(f)
-            os.system(f"ffmpeg -hide_banner -loglevel quiet -i {f} -acodec libvorbis export/sounds/{o}.ogg")
+            os.system(f"ffmpeg -hide_banner -loglevel quiet -y -i {f} -acodec libvorbis export/sounds/{o}.ogg")
             addToPrecaches[1].append(o)
 
         n = open("listVars", "w")
@@ -386,13 +405,13 @@ def main():
         compiledList.append("}\nlocal threads = {}")
         n.close()
 
-        if not target["isStage"]:
-            compiledList.append('local stage = require("mods.scripts.Stage")\nluaDebugMode = true\nlocal oldTimer = 0\nlocal updateCounter = 0')
-        else:
-            compiledList.append('luaDebugMode = true\nlocal oldTimer = 0')
+        if target["isStage"]:
+            compiledList.append('luaDebugMode = true\nlocal oldTimer = 0\nlocal updateBlock = ""')
             n = open("stageVars", "w")
             n.write(open("listVars", "r").read())
             n.close()
+        else:
+            compiledList.append('local stage = require("mods.scripts.Stage")\nluaDebugMode = true\nlocal oldTimer = 0\nlocal updateBlock = ""')
 
         def searchForBlockOPCodes(target, allSearchFor):
             gottenBlockIDS = []
@@ -421,7 +440,7 @@ def main():
                     onUpdateExists = True
                     compiledList.append("function onUpdate(__)")
                 
-                compiledList.append(f"if updateCounter == {onUpdateCount} then")
+                compiledList.append(f'if updateBlock == "{sanitizeVar(blockID)}" then')
                 compiledList.append(processBlock(target["blocks"].get(blockID)["inputs"]["SUBSTACK"][1], True))
                 compiledList.append("end")
                 onUpdateCount += 1
