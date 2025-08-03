@@ -47,14 +47,26 @@ def motion_glideto(spriteName, blockData):
             return [f'getProperty("{to}.x")', f'getProperty("{to}.y")']
         
     SECS = main.getInputVar(blockData["inputs"]["SECS"])
-    TO = main.processBlock(blockData["inputs"]["TO"])
-    return f'doTweenX("{spriteName}_glideX","{spriteName}",{TO[0]}+240,{SECS})\ndoTweenY("{spriteName}_glideY","{spriteName}",{TO[1]}+180,{SECS})'
+    TO = main.processBlock(blockData["inputs"]["TO"][1])
+    FUNC = main.processBlock(blockData["next"], True)
+
+    meta = main.getMetadata()
+    meta["shouldSkip"] = True
+    main.saveMetadata(meta)
+
+    return f'doTweenX("{spriteName}_glideX","{spriteName}",({TO[0]})+240,{SECS})\ndoTweenY("{spriteName}_glideY","{spriteName}",({TO[1]})+180,{SECS})\ntnew({SECS}, function()\n{FUNC}\nend)'
 
 def motion_glidesecstoxy(spriteName, blockData):
     SECS = main.getInputVar(blockData["inputs"]["SECS"])
     X = main.getInputVar(blockData["inputs"]["X"])
     Y = main.getInputVar(blockData["inputs"]["Y"])
-    return f'doTweenX("{spriteName}_glideX","{spriteName}",{X}+240,{SECS})\ndoTweenX("{spriteName}_glideY","{spriteName}",{Y}+180,{SECS})'
+    FUNC = main.processBlock(blockData["next"], True)
+
+    meta = main.getMetadata()
+    meta["shouldSkip"] = True
+    main.saveMetadata(meta)
+
+    return f'doTweenX("{spriteName}_glideX","{spriteName}",({X})+240,{SECS})\ndoTweenY("{spriteName}_glideY","{spriteName}",({Y})+180,{SECS})\ntnew({SECS}, function()\n{FUNC}\nend)'
 
 def motion_pointindirection(spriteName, blockData):
     DIRECTION = main.getInputVar(blockData["inputs"]["DIRECTION"])
@@ -90,10 +102,10 @@ def motion_sety(spriteName, blockData):
     return f'setProperty("{spriteName}.y",{Y}+180-(getProperty("{spriteName}.height")/2))'
 
 def motion_xposition(spriteName, _):
-    return f'getProperty("{spriteName}.x")-240'
+    return f'(getProperty("{spriteName}.x")-240)'
 
 def motion_yposition(spriteName, _):
-    return f'getProperty("{spriteName}.y")-180'
+    return f'(getProperty("{spriteName}.y")-180)'
 
 def motion_direction(spriteName, _):
     return f'getProperty("{spriteName}.angle")'

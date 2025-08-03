@@ -1,33 +1,18 @@
 import rich.traceback as traceback
 traceback.install(extra_lines=3)
 
-import zipfile
-import json
-import ast
-import os
-import re
-import time
-import glob
-import shutil
-from wand.image import Image
-from wand.color import Color
+import zipfile, json, ast, os, time, glob, shutil, string
+from wand.image import Image, Color
 from tkinter import filedialog
 
-import events
-import motion
-import looks
-import sounds
-import controls
-import operators
-import sensing
-import data
+import events, motion, looks, sounds, controls, operators, sensing, data
 
 def cleanup():
     for file in ["save", "spriteName", "listVars", "class", "metadata", "currentBID"]:
         if os.path.exists(file):
             os.remove(file)
 
-    for rems in ["png", "svg", "wav", "mp3"]:
+    for rems in ["png", "svg", "wav", "mp3", "jpg"]:
         for files in glob.glob(f"**.{rems}"):
             os.remove(files)
 
@@ -81,8 +66,10 @@ def isNumOrFunc(s: str):
     s = s.replace('"', '\\"')
     return f'"{s}"'
 
-def sanitizeVar(var):
-    return re.sub(r'\W|^(?=\d)', '_', var)
+def sanitizeVar(var:str):
+    for char in list(string.punctuation + " "):
+        var = var.replace(char, "_")
+    return var
 
 def checkIfStageAndReturnVal(type):
     isStage = True
@@ -254,25 +241,25 @@ def processBlock(blockID, repeatUntilNextIsNull=False):
     if blockID == None:
         return ""
     
-    n = open("currentBID", "w", encoding="utf-8")
+    n = open("currentBID", "w")
     n.write(blockID)
     n.close()
 
     # Python breaks if it's recursive and on a file, my next move
     if curClass == {}:
-        f = open("save", "r", encoding="utf-8").read().split("[[||]]")
+        f = open("save", "r").read().split("[[||]]")
         curClass = ast.literal_eval(f[0])
         target   = ast.literal_eval(f[1])
         opcodes  = fetchOPCodes()
     else:
-        f = open("save", "w", encoding="utf-8")
+        f = open("save", "w")
         f.write(f"{curClass}[[||]]{target}")
         f.close()
 
     data = curClass["blocks"].get(blockID)
     if data == None:
         # Get from class and try again
-        data = json.load(open("class", "r", encoding="utf-8"))["blocks"].get(blockID)
+        data = json.load(open("class", "r"))["blocks"].get(blockID)
         if data == None:
             return "nil --[=[data returned none, skipping]=]"
 
@@ -289,7 +276,7 @@ def processBlock(blockID, repeatUntilNextIsNull=False):
                 blockID = curClass["blocks"].get(blockID)["next"]
             except TypeError:
                 # Try again
-                blockID = json.load(open("class", "r", encoding="utf-8"))["blocks"].get(blockID)["next"]
+                blockID = json.load(open("class", "r"))["blocks"].get(blockID)["next"]
 
             if getMetadata()["shouldSkip"]:
                 break
@@ -307,33 +294,26 @@ def main():
     global curClass, target, opcodes
     addToPrecaches = [[], []]
 
-    os.mkdir("export")
-    os.mkdir("export/scripts")
-    os.mkdir("export/sounds")
-    os.mkdir("export/images")
-    os.mkdir("export/weeks")
-    os.mkdir("export/data")
-    os.mkdir("export/data/scratch")
+    for dir in ["scripts", "sounds", "images", "weeks", "data/scratch"]:
+        os.makedirs(f'export/{dir}')
 
     with open("export/weeks/scratchWeek.json", "w") as f:
         f.write('{"songs":[["Scratch","bf",[12,181,0]]],"hideFreeplay":false,"weekBackground":"","difficulties":"Normal","weekCharacters":["","",""],"storyName":"Converted Using Nael\'s SB3 to FNF Script","weekName":"","freeplayColor":[146,113,253],"hideStoryMode":false,"weekBefore":"","startUnlocked":false}')
-        f.close()
 
     for diff in ["", "-normal"]:
         with open(f"export/data/scratch/scratch{diff}.json", "w") as f:
             f.write('{"song":{"player1":"bf","notes":[],"player2":"gf","song":"Scratch","speed":1,"gfVersion":"gf","events":[],"stage":"stage","needsVoices":true,"bpm":100}}')
-            f.close()
 
-    zip = zipfile.ZipFile(filedialog.askopenfilename(filetypes=[("Scratch Project 3.0", "*.sb3")]))
+    zip = zipfile.ZipFile(filedialog.askopenfilename(filetypes=[("Scratch Binary 3.0", "*.sb3")], title="Choose a Scratch Binary 3.0 file."))
     zip.extract("project.json")
 
     start = time.time()
     opcodes = fetchOPCodes()
-    project = json.load(open("project.json", "r", encoding="utf=8"))
+    project = json.load(open("project.json", "r"))
     for target in project["targets"]:
         spriteName = sanitizeVar(target["name"])
         n = open("spriteName", "w")
-        n.write(sanitizeVar(spriteName))
+        n.write(spriteName)
         n.close()
 
         metadata = {
@@ -344,7 +324,7 @@ def main():
         saveMetadata(metadata)
             
         curClass = target
-        n = open("class", "w", encoding="utf-8")
+        n = open("class", "w")
         n.write(json.dumps(target))
         n.close()
 
@@ -423,13 +403,11 @@ def main():
 
         onCreateExists = False
         onUpdateExists = False
-        onUpdateCount = 1
         for blockID, typeof in searchForBlockOPCodes(target, ["event_whenflagclicked", "control_forever", "event_whenbroadcastreceived", "procedures_definition"]):
             if typeof == "procedures_definition":
                 metadata["line"] += 1
                 saveMetadata(metadata)
                 compiledList.append(processBlock(blockID))
-
                 continue
 
             elif typeof == "event_whenflagclicked":
@@ -443,8 +421,6 @@ def main():
                 compiledList.append(f'if updateBlock == "{sanitizeVar(blockID)}" then')
                 compiledList.append(processBlock(target["blocks"].get(blockID)["inputs"]["SUBSTACK"][1], True))
                 compiledList.append("end")
-                onUpdateCount += 1
-
                 continue
 
             while blockID != None:
@@ -458,7 +434,6 @@ def main():
                     if meta["shouldSkip"]:
                         meta["shouldSkip"] = False
                         saveMetadata(meta)
-
                     break
 
                 metadata["line"] += 1
@@ -481,12 +456,11 @@ def main():
         compiledList.append('function impl(t)\nfor i=1,#threads do\nif threads[i][1]==t then\nthreads[i][2]()\ntable.remove(threads,i)\nend\nend\nend')
         
         if target["isStage"]:
-            compiledList.append('\nfunction onCreate()\nmakeLuaSprite(\"stage\")\nmakeGraphic(\"stage\", 1920, 1080, \"FFFFFF\")\nsetObjectCamera(\"stage\", \"hud\")\naddLuaSprite(\"stage\")\nsetProperty(\"camGame.alpha\", 0)\nend')
+            compiledList.append('\nfunction onCreate()\nmakeLuaSprite("stage")\nmakeGraphic("stage", 1920, 1080, "FFFFFF")\nsetObjectCamera("stage", "hud")\naddLuaSprite("stage")\nsetProperty("camGame.alpha", 0)\nend')
             compiledList.append(f'return {sanitizeVar(spriteName)}_vars')
 
         with open(f"export/scripts/{spriteName}.lua", "w") as f:
             f.write('\n'.join(compiledList))
-            f.close()
 
         if retriveJSONSetting("doCleanup"):
             cleanup()
@@ -497,12 +471,12 @@ def main():
         os.remove("stageVars")
 
     n = open("export/scripts/main_func.lua", "w")
-    n.write('function onUpdate(_)setTextString("scoreTxt","")for i=0,1 do for j=0,3 do setPropertyFromGroup(i==0 and"opponentStrums"or"playerStrums",j,"visible",false)end end if keyboardPressed("ESCAPE")then exitSong()end end function onStartCountdown()return Function_Stop end function onCreatePost()for v0=0,1 do makeLuaSprite("a_"..v0,"",v0==0 and 480 or 0,v0==1 and 360 or 0);makeGraphic("a_"..v0,999,999,"000000");setObjectCamera("a_"..v0,"other");addLuaSprite("a_"..v0);end runHaxeCode("FlxG.updateFramerate = 30;FlxG.drawFramerate = 30;")end function onDestroy()runHaxeCode("FlxG.updateFramerate = 60;FlxG.drawFramerate = 60;")end')
+    n.write('-- This shouldn\'t be touched in any way. leave it as is\nfunction onUpdate()setTextString("scoreTxt","")for i=0,1 do for j=0,3 do setPropertyFromGroup(i==0 and"opponentStrums"or"playerStrums",j,"visible",false)end end if keyboardPressed("ESCAPE")then exitSong()end end function onStartCountdown()return Function_Stop end function onCreatePost()for v0=0,1 do makeLuaSprite("a_"..v0,"",v0==0 and 480 or 0,v0==1 and 360 or 0);makeGraphic("a_"..v0,999,999,"000000");setObjectCamera("a_"..v0,"other");addLuaSprite("a_"..v0);end runHaxeCode("FlxG.updateFramerate=30;FlxG.drawFramerate=30;")end function onDestroy()runHaxeCode("FlxG.updateFramerate=60;FlxG.drawFramerate=60;")end')
     n.close()
 
     if retriveJSONSetting("doPrecache"):
         n = open("export/scripts/precache.lua", "w")
-        n.write("function onCreate()\n")
+        n.write("function onCreate()")
     
         for costume in addToPrecaches[0]:
             n.write(f'precacheImage("{costume}")')

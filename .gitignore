@@ -3,10 +3,11 @@ project.json
 export/*
 __pycache__/*
 
-# Files generated from py
+# Files generated from python scripts
 spriteName
 save
 listVars
 class
 stageVars
 metadata
+currentBID

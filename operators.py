@@ -92,30 +92,23 @@ def operator_round(_, blockData):
 
 def operator_mathop(_, blockData):
     NUM = noneTo0(main.getInputVar(blockData["inputs"]["NUM"]))
-    OPE = blockData["fields"]["OPERATOR"][0]
 
-    mathType = [
-        ["acos",    "math.acos"],
-        ["atan",    "math.atan"],
-        ["ln",      "math.log"],
-        ["log",     "math.log10"],
-        ["e ^",     "math.exp"],
-        ["10 ^",    "10^", True],
-        ["abs",     "math.abs"],
-        ["floor",   "math.floor"],
-        ["ceiling", "math.ceil"],
-        ["sqrt",    "math.sqrt"],
-        ["sin",     "math.sin"],
-        ["cos",     "math.cos"],
-        ["tan",     "math.tan"],
-        ["asin",    "math.asin"]
-    ]
-
-    i = 0
-    for mt in mathType:
-        if OPE == mt[0]:
-            OPE = mt[1]
-            break
-        i += 1
-
-    return f'{OPE}({NUM})' if len(mathType[i]) == 2 else f'{OPE}{NUM}'
+    mathType = {
+        "acos":    "math.acos",
+        "atan":    "math.atan",
+        "ln":      "math.log",
+        "log":     "math.log10",
+        "e ^":     "math.exp",
+        "10 ^":    "10^",
+        "abs":     "math.abs",
+        "floor":   "math.floor",
+        "ceiling": "math.ceil",
+        "sqrt":    "math.sqrt",
+        "sin":     "math.sin",
+        "cos":     "math.cos",
+        "tan":     "math.tan",
+        "asin":    "math.asin"
+    }
+    
+    OPE = mathType[blockData["fields"]["OPERATOR"][0]]
+    return f'{OPE}({NUM})' if OPE != "10^" else f'{OPE}{NUM}'
